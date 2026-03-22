@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Active Phase:** 6 — Adaptive Engine
-**Phase Status:** planned
-**Current Plan:** Phase 5 COMPLETE — Phase 6 planned and ready to execute
+**Active Phase:** 7 — Social + Retention
+**Phase Status:** planning
+**Current Plan:** Phase 6 COMPLETE — Phase 7 planning in progress
 **Last Updated:** 2026-03-22
-**Last Session:** Phase 5 done — SyncService (connectivity_plus + Supabase push for WorkoutLog/SetLog/CheckIn) and onboarding profile save to Supabase with auth UID. Phase 6 plans created: readiness score computation, adaptive rules engine, rest day content.
+**Last Session:** Phase 6 done — readiness_provider (live Hive-backed Provider), AdaptiveEngine (7-rule engine with WHY banner), RestDayContent, TodayScreen wired to all. Phase 7 planning started: XP/streaks, buddy challenges, PR share cards, push notifications.
 
 ## Phase Progress
 
@@ -17,7 +17,7 @@
 | 3 — Core Loop Wiring | DONE | WorkoutProvider→Hive, SetLog save, rest timer, CheckIn save, PR detection (Epley) all done. |
 | 4 — History + Progress + Profile | DONE | History, Progress, Profile screens all wired to real Hive data. |
 | 5 — Offline Sync + Onboarding | DONE | SyncService live (connectivity_plus listener, Supabase upsert for 3 record types, retry on reconnect). Quiz saves profile to Hive + Supabase with auth UID. |
-| 6 — Adaptive Engine | 📋 planned | Plans created 2026-03-22. 3 plans ready to execute. |
+| 6 — Adaptive Engine | DONE | readiness_provider, AdaptiveEngine (7 rules), RestDayContent, TodayScreen wired. Done 2026-03-22. |
 | 7 — Social + Retention | 🔲 not_started | |
 | 8 — Advanced Features | 🔲 not_started | |
 
