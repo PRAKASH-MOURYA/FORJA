@@ -8,8 +8,8 @@
 | 2 | Supabase Backend | Schema + Auth live | SUPABASE-01–03, AUTH-01–05 | 3 DONE |
 | 3 | Core Loop Wiring | Real data flows through the loop | TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05 | 4 DONE |
 | 4 | History + Progress + Profile | All tabs show real data | HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04 | 3 DONE |
-| 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2 planned |
-| 6 | Adaptive Engine | App adapts to user recovery | v2 adaptive requirements | 3 |
+| 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2/2 DONE |
+| 6 | Adaptive Engine | App adapts to user recovery | ADAPT-01–07 | 3 |
 | 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 |
 | 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
 
@@ -96,8 +96,8 @@
 **Requirements:** SYNC-01–05, ONBOARD-01–04
 
 **Plans:**
-1. `sync-service` — SyncService: connectivity_plus listener, push all Hive pending records to Supabase, update sync_status
-2. `onboarding-save` — Quiz completion creates UserProfile in Hive + syncs to Supabase profiles table
+1. `sync-service` — SyncService: connectivity_plus listener, push all Hive pending records to Supabase, update sync_status **[DONE — 2026-03-22]**
+2. `onboarding-save` — Quiz completion creates UserProfile in Hive + syncs to Supabase profiles table **[DONE — 2026-03-22]**
 
 **Success Criteria:**
 1. Workout logs offline (airplane mode) then sync when connectivity restored
@@ -111,10 +111,14 @@
 ## Phase 6: Adaptive Engine
 **Goal:** App feels like it knows the user — adjusts next session based on check-in history.
 
-**Plans:**
-1. `readiness-score` — Full ReadinessScore computation (energy 30%, soreness inverted 25%, sleep 20%, days since workout 15%, mood 10%); zone display (Green/Yellow/Red)
-2. `adaptive-rules` — AdaptiveEngine service: 7 if/then rules; modifies next workout; shows WHY banner to user
-3. `rest-day-content` — Smart rest day: mobility suggestions, foam rolling guide, active recovery, weekly progress reflection
+**Requirements:** ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04, ADAPT-05, ADAPT-06, ADAPT-07
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — readiness-score: Wire CalculationService to live readinessProvider; replace hardcoded banner with real zone colors
+- [ ] 06-02-PLAN.md — adaptive-rules: AdaptiveEngine service with 7 if/then rules; modifies next workout; WHY banner
+- [ ] 06-03-PLAN.md — rest-day-content: Smart rest day inline in TodayScreen (mobility, foam rolling, active recovery, weekly reflection)
 
 **Success Criteria:**
 1. After 3 high-soreness check-ins, next workout shows lighter session banner
