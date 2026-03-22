@@ -9,8 +9,8 @@
 | 3 | Core Loop Wiring | Real data flows through the loop | TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05 | 4 DONE |
 | 4 | History + Progress + Profile | All tabs show real data | HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04 | 3 DONE |
 | 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2/2 DONE |
-| 6 | Adaptive Engine | App adapts to user recovery | ADAPT-01–07 | 3 |
-| 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 |
+| 6 | Adaptive Engine | App adapts to user recovery | ADAPT-01–07 | 3 DONE |
+| 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 plans |
 | 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
 
 ---
@@ -116,9 +116,9 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — readiness-score: Wire CalculationService to live readinessProvider; replace hardcoded banner with real zone colors
-- [ ] 06-02-PLAN.md — adaptive-rules: AdaptiveEngine service with 7 if/then rules; modifies next workout; WHY banner
-- [ ] 06-03-PLAN.md — rest-day-content: Smart rest day inline in TodayScreen (mobility, foam rolling, active recovery, weekly reflection)
+- [x] 06-01-PLAN.md — readiness-score: Wire CalculationService to live readinessProvider; replace hardcoded banner with real zone colors **[DONE — 2026-03-22]**
+- [x] 06-02-PLAN.md — adaptive-rules: AdaptiveEngine service with 7 if/then rules; modifies next workout; WHY banner **[DONE — 2026-03-22]**
+- [x] 06-03-PLAN.md — rest-day-content: Smart rest day inline in TodayScreen (mobility, foam rolling, active recovery, weekly reflection) **[DONE — 2026-03-22]**
 
 **Success Criteria:**
 1. After 3 high-soreness check-ins, next workout shows lighter session banner
@@ -131,11 +131,13 @@ Plans:
 ## Phase 7: Social + Retention
 **Goal:** Turn solo users into a community — streaks, challenges, shareable PR cards.
 
-**Plans:**
-1. `xp-streaks` — XP system (workout +100, PR +200, check-in +20); 6 levels; weekly streak + 1 shield/month; shown on Profile
-2. `buddy-challenges` — Volume battle, consistency challenge, 30-day challenge; invite via shareable link; Supabase leaderboard
-3. `pr-share-cards` — Auto-generated PR card; one-tap share to Instagram Stories / WhatsApp
-4. `push-notifications` — firebase_messaging; workout reminder, streak-at-risk, PR celebration; max 3/week
+**Plans:** 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — xp-streaks: XpService + StreakService (pure, TDD); XpBanner on ProfileScreen; XP/streak wired into CompleteScreen
+- [ ] 07-02-PLAN.md — buddy-challenges: Supabase schema (challenges + challenge_participants), Challenge Freezed model, ChallengeScreen, deep link join via app_links
+- [ ] 07-03-PLAN.md — pr-share-cards: PrCardWidget (RepaintBoundary), PrCardService (share_plus v12), Share PR button on CompleteScreen
+- [ ] 07-04-PLAN.md — push-notifications: Firebase init, NotificationService (FCM + flutter_local_notifications), workout reminder scheduler, FCM token in Supabase
 
 **Success Criteria:**
 1. XP increases after workout completion
