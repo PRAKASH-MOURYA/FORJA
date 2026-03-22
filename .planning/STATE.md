@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Active Phase:** 5 — Offline Sync + Onboarding
+**Active Phase:** 6 — Adaptive Engine
 **Phase Status:** planned
-**Current Plan:** Phase 4 COMPLETE — Phase 5 planned and ready to execute
+**Current Plan:** Phase 5 COMPLETE — Phase 6 planned and ready to execute
 **Last Updated:** 2026-03-22
-**Last Session:** Phase 4 done — History/Progress/Profile all wired to real Hive data. Phase 5 plans created: SyncService (connectivity_plus + Supabase push) and onboarding profile save to Supabase.
+**Last Session:** Phase 5 done — SyncService (connectivity_plus + Supabase push for WorkoutLog/SetLog/CheckIn) and onboarding profile save to Supabase with auth UID. Phase 6 plans created: readiness score computation, adaptive rules engine, rest day content.
 
 ## Phase Progress
 
@@ -16,8 +16,8 @@
 | 2 — Supabase Backend | DONE | Auth, RLS schema, router redirect, secure token storage via FlutterSecureStorage all done. |
 | 3 — Core Loop Wiring | DONE | WorkoutProvider→Hive, SetLog save, rest timer, CheckIn save, PR detection (Epley) all done. |
 | 4 — History + Progress + Profile | DONE | History, Progress, Profile screens all wired to real Hive data. |
-| 5 — Offline Sync + Onboarding | 📋 planned | Plans created 2026-03-22. 2 plans ready to execute. |
-| 6 — Adaptive Engine | 🔲 not_started | |
+| 5 — Offline Sync + Onboarding | DONE | SyncService live (connectivity_plus listener, Supabase upsert for 3 record types, retry on reconnect). Quiz saves profile to Hive + Supabase with auth UID. |
+| 6 — Adaptive Engine | 📋 planned | Plans created 2026-03-22. 3 plans ready to execute. |
 | 7 — Social + Retention | 🔲 not_started | |
 | 8 — Advanced Features | 🔲 not_started | |
 
