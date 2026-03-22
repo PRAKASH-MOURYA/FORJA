@@ -1,118 +1,171 @@
-# Roadmap: FORJA
+# FORJA — Roadmap
 
-## Overview
+**8 phases** | **37 requirements mapped** | All v1 requirements covered ✓
 
-FORJA is a Flutter gym tracking app (iOS + Android) for students and beginners aged 18-28. The development arc starts with infrastructure cleanup and a verified build foundation, then builds the full user journey: auth → onboarding quiz → today's workout → live workout logging → post-workout check-in → history/progress/profile screens with real data → full test coverage.
-
-## Phases
-
-- [x] **Phase 1: Build Verification** - Delete legacy code, add VIBRATE permission, verify app runs on emulator
-- [x] **Phase 2: Foundation Layer** - Auth screen, all Freezed models, HiveService, services, repositories, providers, shared widgets, scaffolded feature screens
-- [ ] **Phase 3: Onboarding + Today Screen** - Wire onboarding quiz to real UserProfile persistence; replace hardcoded TodayScreen with live program data
-- [ ] **Phase 4: Workout Flow** - Full workout logging (sets, weights, rest timer, auto-advance, PR detection, crash recovery)
-- [ ] **Phase 5: Data Screens** - History, Progress, and Profile screens with real Hive data
-- [ ] **Phase 6: Tests + Polish** - 80%+ coverage, integration tests, final emulator QA
-
----
-
-## Phase Details
-
-### Phase 1: Build Verification
-**Goal**: App compiles and runs on Android emulator with no crashes — the foundation is solid
-**Depends on**: Nothing
-**Requirements**: INFRA-01, INFRA-02, INFRA-03
-**Status**: ✅ COMPLETE (2026-03-16)
-**Success Criteria**:
-  1. lib/screens/, lib/widgets/, lib/theme/, lib/models/, lib/data/ deleted — lib/features/ is single source of truth
-  2. flutter analyze: 0 errors
-  3. VIBRATE permission in AndroidManifest.xml
-  4. App runs on emulator-5554, all 4 tabs smoke-tested
-
-Plans:
-- [x] 01-01: Delete 5 legacy directories, verify flutter analyze clean
-- [x] 01-02: Verify Freezed files, add VIBRATE permission, clean build, emulator smoke test
+| # | Phase | Goal | Requirements | Plans |
+|---|-------|------|--------------|-------|
+| 1 | Build Verification | App runs clean on emulator | INFRA-01–04 | 2/2 DONE |
+| 2 | Supabase Backend | Schema + Auth live | SUPABASE-01–03, AUTH-01–05 | 3 DONE |
+| 3 | Core Loop Wiring | Real data flows through the loop | TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05 | 4 DONE |
+| 4 | History + Progress + Profile | All tabs show real data | HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04 | 3 DONE |
+| 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2 planned |
+| 6 | Adaptive Engine | App adapts to user recovery | v2 adaptive requirements | 3 |
+| 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 |
+| 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
 
 ---
 
-### Phase 2: Foundation Layer
-**Goal**: All infrastructure in place — models, data layer, state management, auth, 8 shared widgets, feature screen scaffolds
-**Depends on**: Phase 1
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, INFRA-04, INFRA-05
-**Status**: ✅ COMPLETE (2026-03-21)
-**Success Criteria**:
-  1. All 6 Freezed models with Hive adapters (Exercise, WorkoutLog, SetLog, CheckIn, UserProfile, ReadinessScore)
-  2. HiveService, CalculationService, ProgramSelector, AuthService implemented
-  3. All 4 repositories (workout, checkin, profile, pr) and 4 providers (auth, theme, workout, sync)
-  4. All 8 shared widgets (ForjaButton, ForjaCard, ForjaPill, StatCard, ExerciseRow, RestTimer, SetRow, CheckInSlider)
-  5. AuthScreen (email/password + guest mode) with go_router redirect logic
-  6. 8 program templates in programs.dart, 40+ exercises in exercises.dart
-  7. All feature screens scaffolded (onboarding, quiz, today, history, progress, profile, workout, complete)
+## Phase 1: Build Verification
+**Goal:** App compiles and runs on Android emulator with no crashes — the foundation is solid.
 
-Plans:
-- [x] 02-01: Foundation built manually outside GSD
+**Requirements:** INFRA-01, INFRA-02, INFRA-03, INFRA-04
 
----
+**Plans:**
+1. `cleanup` — Delete lib/screens/ legacy files, verify lib/features/ is the only source of truth **[DONE — 2026-03-16]**
+2. `emulator-run` — Fix vibration Android build, run on emulator-5554, smoke-test all 4 tabs **[DONE — 2026-03-16]**
 
-### Phase 3: Onboarding + Today Screen
-**Goal**: First-time user flows through onboarding quiz → program assigned → TodayScreen shows real exercises for today
-**Depends on**: Phase 2
-**Requirements**: ONBD-01, ONBD-02, ONBD-03, ONBD-04, ONBD-05, ONBD-06, TODAY-01, TODAY-02, TODAY-03, TODAY-04, TODAY-05
-**Success Criteria**:
-  1. New user (guest or authed) with no UserProfile is redirected to /onboarding
-  2. Quiz completes → UserProfile saved to Hive with currentProgramId → redirect to /today
-  3. TodayScreen reads assigned program day's exercises (not hardcoded _pushDayExercises)
-  4. Tapping an exercise opens ExerciseDemoSheet with form cues, target muscles, swap alternatives
-  5. "Start Workout" navigates to /workout with today's exercises as arguments
-**Plans**: 3 plans
-
-Plans:
-- [ ] 03-01-PLAN.md — Create failing test stubs for all Phase 3 behaviours (Wave 1)
-- [ ] 03-02-PLAN.md — Router onboarding redirect + todayProgramProvider (Wave 2)
-- [ ] 03-03-PLAN.md — Wire TodayScreen to live data + emulator smoke test (Wave 3)
+**Success Criteria:**
+1. `flutter run -d emulator-5554` succeeds with no Gradle errors
+2. All 4 tabs are visible and tappable
+3. Today screen shows Push Day exercises
+4. No runtime crashes during 5-minute smoke test
+5. lib/screens/ directory deleted from repo
 
 ---
 
-### Phase 4: Workout Flow
-**Goal**: User can log a complete workout — sets, weights, rest timer, auto-advance, PR detection — all persisted to Hive
-**Depends on**: Phase 3
-**Requirements**: WKT-01, WKT-02, WKT-03, WKT-04, WKT-05, WKT-06, WKT-07, CMP-01, CMP-02, CMP-03, CMP-04
-**Success Criteria**:
-  1. WorkoutScreen: exercises auto-advance, each set logged with weight/reps/checkbox
-  2. Rest timer counts down and vibrates on completion
-  3. PR badge shown inline when a personal record is set
-  4. CompleteScreen shows real volume/duration/set stats + PR count
-  5. CheckIn slider saves to Hive; ReadinessScore calculated
-  6. Full workout persists across app restart (WidgetsBindingObserver)
-**Plans**: TBD
+## Phase 2: Supabase Backend
+**Goal:** Supabase project is live with all tables, RLS, and auth working.
+
+**Requirements:** SUPABASE-01, SUPABASE-02, SUPABASE-03, AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05
+
+**Plans:**
+1. `supabase-schema` — Create all 5 tables, enable RLS, add auth.uid() policies, SQL migrations
+2. `auth-integration` — Add supabase_flutter to pubspec, implement AuthService (sign up/in/out), secure token storage
+3. `auth-screens` — Login/signup screen, go_router redirect guard for unauthenticated users
+
+**Success Criteria:**
+1. All 5 tables exist in Supabase with correct schema and RLS
+2. User can sign up with email/password
+3. Session persists across app restarts
+4. Unauthenticated users redirected to auth screen
+5. Auth tokens in flutter_secure_storage (not plain Hive)
 
 ---
 
-### Phase 5: Data Screens
-**Goal**: History, Progress, and Profile screens powered by real Hive data
-**Depends on**: Phase 4
-**Requirements**: HIST-01, HIST-02, HIST-03, PROG-01, PROG-02, PROG-03, PROG-04, PROF-01, PROF-02, PROF-03, PROF-04
-**Success Criteria**:
-  1. HistoryScreen lists completed workouts (most recent first), empty state if none
-  2. ProgressScreen shows volume chart (last 8 weeks, animated), 1RM trends, PR badges
-  3. ProfileScreen shows real name, assigned program, total workouts/volume/streak, XP level
-**Plans**: TBD
+## Phase 3: Core Loop Wiring
+**Goal:** The main loop works end-to-end with real data — open app, see today's workout, log it, check in.
+
+**Requirements:** TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05
+
+**Plans:**
+1. `today-wiring` — TodayScreen reads from programs constants + UserProfile to show correct workout day; readiness banner uses real CalculationService
+2. `workout-wiring` — WorkoutProvider connects to Hive repositories; SetLogs save to Hive on checkbox; weight pre-fill from last session
+3. `checkin-wiring` — CompleteScreen shows real stats (volume, sets, PR count); CheckIn saves to Hive via CheckInRepository
+4. `pr-detection` — PrRepository detects new PRs per exercise per session using Epley; PR count shown in complete screen
+
+**Success Criteria:**
+1. TodayScreen shows correct program day (e.g. Day 2 of PPL on day 2)
+2. Workout logging saves a WorkoutLog + SetLogs to Hive and verifiable in debug
+3. Rest timer runs 90 seconds and auto-advances
+4. CheckIn saved to Hive on "Save & Finish"
+5. PR detected when a new max weight is logged
 
 ---
 
-### Phase 6: Tests + Polish
-**Goal**: 80%+ test coverage; final emulator QA pass; app ready for TestFlight/internal testing
-**Depends on**: Phase 5
-**Requirements**: INFRA-06
-**Success Criteria**:
-  1. Unit tests: CalculationService (1RM edge cases, PR detection, readiness)
-  2. Unit tests: ProgramSelector (all 8 template mappings)
-  3. Unit tests: All 4 repositories (CRUD with mocked Hive)
-  4. Widget tests: All 8 shared widgets
-  5. Integration test: Onboarding → Today screen → Workout → Complete → History shows entry
-  6. 80%+ coverage verified
-  7. Final emulator run on emulator-5554: all critical flows pass
-**Plans**: TBD
+## Phase 4: History + Progress + Profile
+**Goal:** All remaining tabs show real computed data from Hive.
+
+**Requirements:** HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04
+
+**Plans:**
+1. `history-wiring` — HistoryScreen reads WorkoutLogs from Hive; calendar strip marks real workout days; PR badge from PrRepository
+2. `progress-wiring` — ProgressScreen reads weekly volume from CalculationService; 1RM trends from PrRepository; stat cards from Hive aggregates
+3. `profile-wiring` — ProfileScreen reads UserProfile from Hive; workout count, total volume, streak from repositories
+
+**Success Criteria:**
+1. History tab shows actual logged workouts (not hardcoded)
+2. Volume bar chart matches real logged volume per day
+3. 1RM trend rows update after each PR
+4. Profile shows correct name, program, workout count
 
 ---
 
-*Last updated: 2026-03-21*
+## Phase 5: Offline Sync + Onboarding
+**Goal:** Full offline-first works, onboarding saves profile to Supabase, sync pushes pending records.
+
+**Requirements:** SYNC-01–05, ONBOARD-01–04
+
+**Plans:**
+1. `sync-service` — SyncService: connectivity_plus listener, push all Hive pending records to Supabase, update sync_status
+2. `onboarding-save` — Quiz completion creates UserProfile in Hive + syncs to Supabase profiles table
+
+**Success Criteria:**
+1. Workout logs offline (airplane mode) then sync when connectivity restored
+2. sync_status transitions: pending to synced after connectivity event
+3. Failed syncs retry on next connectivity event
+4. Onboarding profile saves to both Hive and Supabase profiles table
+5. No network requests block UI during active workout
+
+---
+
+## Phase 6: Adaptive Engine
+**Goal:** App feels like it knows the user — adjusts next session based on check-in history.
+
+**Plans:**
+1. `readiness-score` — Full ReadinessScore computation (energy 30%, soreness inverted 25%, sleep 20%, days since workout 15%, mood 10%); zone display (Green/Yellow/Red)
+2. `adaptive-rules` — AdaptiveEngine service: 7 if/then rules; modifies next workout; shows WHY banner to user
+3. `rest-day-content` — Smart rest day: mobility suggestions, foam rolling guide, active recovery, weekly progress reflection
+
+**Success Criteria:**
+1. After 3 high-soreness check-ins, next workout shows lighter session banner
+2. After all sets completed, next session pre-fills +2.5 kg
+3. Readiness score banner shows correct zone color
+4. Rest day shows recovery content instead of workout
+
+---
+
+## Phase 7: Social + Retention
+**Goal:** Turn solo users into a community — streaks, challenges, shareable PR cards.
+
+**Plans:**
+1. `xp-streaks` — XP system (workout +100, PR +200, check-in +20); 6 levels; weekly streak + 1 shield/month; shown on Profile
+2. `buddy-challenges` — Volume battle, consistency challenge, 30-day challenge; invite via shareable link; Supabase leaderboard
+3. `pr-share-cards` — Auto-generated PR card; one-tap share to Instagram Stories / WhatsApp
+4. `push-notifications` — firebase_messaging; workout reminder, streak-at-risk, PR celebration; max 3/week
+
+**Success Criteria:**
+1. XP increases after workout completion
+2. Weekly streak increments correctly (not daily)
+3. Buddy challenge invite link works
+4. PR card generates and shares successfully
+5. Push notification received for workout reminder
+
+---
+
+## Phase 8: Advanced Features
+**Goal:** Holistic fitness companion with wearable data, nutrition basics, and data export.
+
+**Plans:**
+1. `wearables` — health package (HealthKit + Health Connect); auto-import sleep/HR/HRV; upgraded readiness score
+2. `nutrition-basics` — Daily protein target; training vs rest day plate visual; water reminder; no calorie tracking
+3. `data-export` — CSV workout history export; monthly PDF progress summary
+
+**Success Criteria:**
+1. Sleep hours auto-imported from HealthKit/Health Connect
+2. Protein target shown on Profile based on user goal
+3. CSV export downloads full workout history
+4. Monthly PDF generates with volume trend + PRs + consistency
+
+---
+
+## Phase Gates
+
+Each phase must pass before next begins:
+- **Phase 1 gate:** flutter run succeeds, 4 tabs visible, no crashes
+- **Phase 2 gate:** Supabase auth works end-to-end, RLS verified
+- **Phase 3 gate:** Full core loop with real data saved
+- **Phase 4 gate:** All tabs show real data (no hardcoded values)
+- **Phase 5 gate:** Offline mode + sync verified (airplane mode test)
+- **Phase 6 gate:** Adaptive logic modifies workout based on check-in history
+- **Phase 7 gate:** Streak counting works, PR card shareable, notification received
+- **Phase 8 gate:** HealthKit/Health Connect data flows to readiness score
