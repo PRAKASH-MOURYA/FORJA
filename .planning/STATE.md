@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_plan: Phase 6 COMPLETE — Phase 7 planning in progress
+status: unknown
+last_updated: "2026-03-23T07:17:58.065Z"
+progress:
+  total_phases: 9
+  completed_phases: 2
+  total_plans: 17
+  completed_plans: 6
+---
+
 # FORJA — Project State
 
 ## Current Status
@@ -6,7 +20,7 @@
 **Phase Status:** planning
 **Current Plan:** Phase 6 COMPLETE — Phase 7 planning in progress
 **Last Updated:** 2026-03-22
-**Last Session:** Phase 6 done — readiness_provider (live Hive-backed Provider), AdaptiveEngine (7-rule engine with WHY banner), RestDayContent, TodayScreen wired to all. Phase 7 planning started: XP/streaks, buddy challenges, PR share cards, push notifications.
+**Last Session:** 2026-03-23T07:17:58.059Z
 
 ## Phase Progress
 
@@ -60,6 +74,11 @@ The following was built outside GSD phases. It is committed and functional but p
 - flutter build apk --debug: BUILD SUCCESSFUL (app-debug.apk confirmed)
 - Supabase: not integrated
 - Emulator: smoke test APPROVED 2026-03-16 — all 4 tabs (Today, History, Progress, Profile) loaded without crashing on emulator-5554
+
+## Accumulated Context
+
+### Roadmap Evolution
+- Phase 07.1 inserted after Phase 7: workout-ux-enhancements (URGENT) — custom splits, back-arrow session guard, exercise history, pre-workout exercise list, readiness by muscle group, PR to Beat Card on home, Muscle Recovery Heatmap on home
 
 ## Decisions Log
 
