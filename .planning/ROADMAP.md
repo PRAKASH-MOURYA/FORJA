@@ -11,6 +11,7 @@
 | 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2/2 DONE |
 | 6 | Adaptive Engine | App adapts to user recovery | ADAPT-01–07 | 3 DONE |
 | 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 plans |
+| 7.1 | Workout UX Enhancements | Custom splits, session guard, PR card, heatmap | UX-01–07 | 3 plans |
 | 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
 
 ---
@@ -148,6 +149,18 @@ Plans:
 
 ---
 
+### Phase 07.1: workout-ux-enhancements (INSERTED)
+
+**Goal:** Custom workout splits, persistent workout session (back-arrow guard), exercise history view, pre-workout exercise list with previous session data, readiness score by muscle group, PR to Beat Card on home screen, Muscle Recovery Heatmap on home screen
+**Requirements:** UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-07
+**Depends on:** Phase 7
+**Plans:** 3 plans
+
+Plans:
+- [ ] 07.1-01-PLAN.md — workout-guards-history: Session guard bottom sheet + exercise history bottom sheet on WorkoutScreen
+- [ ] 07.1-02-PLAN.md — today-ux-cards: MuscleRecoveryService, ExerciseRow last-session subtitle, PR to Beat Card, Recovery Heatmap, TodayScreen wiring
+- [ ] 07.1-03-PLAN.md — custom-split-builder: CustomSplit Freezed model (typeId=6), SplitDay (typeId=7), HiveService registration, SplitBuilderScreen, Profile entry point, router route
+
 ## Phase 8: Advanced Features
 **Goal:** Holistic fitness companion with wearable data, nutrition basics, and data export.
 
@@ -174,4 +187,5 @@ Each phase must pass before next begins:
 - **Phase 5 gate:** Offline mode + sync verified (airplane mode test)
 - **Phase 6 gate:** Adaptive logic modifies workout based on check-in history
 - **Phase 7 gate:** Streak counting works, PR card shareable, notification received
+- **Phase 7.1 gate:** Session guard prevents accidental exits, heatmap shows on TodayScreen, custom split saves to Hive
 - **Phase 8 gate:** HealthKit/Health Connect data flows to readiness score
