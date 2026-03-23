@@ -161,6 +161,15 @@ Plans:
 - [ ] 07.1-02-PLAN.md — today-ux-cards: MuscleRecoveryService, ExerciseRow last-session subtitle, PR to Beat Card, Recovery Heatmap, TodayScreen wiring
 - [ ] 07.1-03-PLAN.md — custom-split-builder: CustomSplit Freezed model (typeId=6), SplitDay (typeId=7), HiveService registration, SplitBuilderScreen, Profile entry point, router route
 
+**Success Criteria:**
+1. Back arrow mid-workout shows "Resume Workout / Discard & Exit" bottom sheet — does not exit without confirmation
+2. Tapping exercise name in WorkoutScreen opens history sheet showing last 3 sessions or empty state
+3. Each ExerciseRow on TodayScreen shows "Last: Xkg × Y" subtitle when prior set data exists
+4. PR to Beat Card appears below exercise list (exercise name + current PR + target +2.5 kg)
+5. Recovery Heatmap collapsed by default showing summary (e.g. "3 ready · 2 fatigued"); expands to 2-column color-coded muscle grid
+6. ProfileScreen shows "Build Split" button; SplitBuilderScreen saves CustomSplit to Hive
+7. flutter analyze 0 errors, flutter build apk --debug succeeds
+
 ## Phase 8: Advanced Features
 **Goal:** Holistic fitness companion with wearable data, nutrition basics, and data export.
 
