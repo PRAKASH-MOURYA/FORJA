@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
@@ -18,8 +19,6 @@ import 'rest_day_content.dart';
 import 'widgets/pr_to_beat_card.dart';
 import 'widgets/recovery_heatmap_card.dart';
 
-
-
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
@@ -37,7 +36,9 @@ class TodayScreen extends ConsumerWidget {
     if (adaptivePlan == null) {
       return const Scaffold(
         backgroundColor: AppColors.bg,
-        body: Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
       );
     }
     final plan = adaptivePlan.basePlan;
@@ -46,37 +47,37 @@ class TodayScreen extends ConsumerWidget {
         .where((e) => !adaptivePlan.isExerciseRemoved(e.id))
         .toList();
 
-    // --- Pre-workout data (synchronous Hive reads) ---
     final workoutRepo = WorkoutRepository();
     final prRepo = PrRepository();
     final allLogs = workoutRepo.getAll();
 
-    // lastSessionSubtitles: exerciseId -> "Last: Xkg × Y"
     final Map<String, String> lastSessionSubtitles = {};
+    final Map<String, String> prSubtitles = {};
     for (final exercise in sessionExercises) {
       for (final log in allLogs) {
         final sets = workoutRepo
             .getSetsForWorkout(log.id)
             .where((s) => s.exerciseId == exercise.id && s.completed)
             .toList();
-
         if (sets.isEmpty) continue;
-
-        // Use the highest-weight completed set as representative.
         final best = sets.reduce((a, b) => a.weightKg > b.weightKg ? a : b);
         lastSessionSubtitles[exercise.id] =
             'Last: ${best.weightKg.toStringAsFixed(0)}kg × ${best.reps}';
-        break; // most recent log found — stop scanning
+        break;
+      }
+
+      final pr = prRepo.getLatestPRForExercise(exercise.id);
+      if (pr != null) {
+        final weightKg = (pr['weight_kg'] as num).toDouble();
+        prSubtitles[exercise.id] = 'PR: ${weightKg.toStringAsFixed(0)} kg';
       }
     }
 
-    // PR to Beat: find the best current PR opportunity across today's exercises.
     String? prExerciseName;
     double prCurrentKg = 0;
     for (final exercise in sessionExercises) {
       final pr = prRepo.getLatestPRForExercise(exercise.id);
       if (pr == null) continue;
-
       final weightKg = (pr['weight_kg'] as num).toDouble();
       if (prExerciseName == null || weightKg > prCurrentKg) {
         prExerciseName = exercise.name;
@@ -85,180 +86,231 @@ class TodayScreen extends ConsumerWidget {
     }
     final prTargetKg = prCurrentKg + 2.5;
 
-    // Recovery heatmap
     final recoveryService = MuscleRecoveryService();
     final recoveryStatuses = recoveryService.getRecoveryStatuses();
     final recoverySummary = recoveryService.summaryText(recoveryStatuses);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xxl,
-                AppSpacing.lg,
-                AppSpacing.xxl,
-                0,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(dateStr,
-                                  style: AppTextStyles.caption(
-                                      AppColors.textSecondary)),
-                              const SizedBox(height: AppSpacing.xs),
-                              Text(plan.dayName,
-                                  style: AppTextStyles.display(
-                                      AppColors.textPrimary)),
-                            ],
-                          ),
-                        ),
-                        // Avatar
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.accentGradient,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.circle),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            (profileName != null && profileName.isNotEmpty)
-                                ? profileName[0].toUpperCase()
-                                : 'A',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.bg,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    // Pills row
-                    const Wrap(
-                      spacing: AppSpacing.sm,
-                      children: [
-                        ForjaPill.accent(label: 'Day 3 of 4'),
-                        ForjaPill(label: '~52 min'),
-                        ForjaPill.warm(label: 'Ready'),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    // Readiness banner
-                    _readinessBanner(readiness),
-                    if (adaptivePlan.whyMessage != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      _whyBanner(adaptivePlan.whyMessage!),
-                    ],
-                    const SizedBox(height: AppSpacing.xxl),
-                    // Section label
-                    Text('EXERCISES',
-                        style: AppTextStyles.labelUppercase(
-                            AppColors.textSecondary)),
-                    const SizedBox(height: AppSpacing.sm),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // Ambient gradient overlay at top
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 320,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.ambientGradient,
               ),
             ),
-            if (adaptivePlan.isRestDay)
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                sliver: SliverToBoxAdapter(
-                  child: RestDayContent(
-                    workoutsThisWeek: adaptivePlan.workoutsThisWeek,
-                    setsThisWeek: adaptivePlan.setsThisWeek,
-                    volumeKgThisWeek: adaptivePlan.volumeKgThisWeek,
+          ),
+          SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl,
+                    AppSpacing.xl,
+                    AppSpacing.xxl,
+                    0,
                   ),
-                ),
-              )
-            else ...[
-              // Exercise list
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final exercise = sessionExercises[index];
-                      return ExerciseRow(
-                        exercise: exercise,
-                        index: index,
-                        onTap: () => _showDemoSheet(context, exercise),
-                        lastSessionSubtitle:
-                            lastSessionSubtitles[exercise.id],
-                      );
-                    },
-                    childCount: sessionExercises.length,
-                  ),
-                ),
-              ),
-              // PR to Beat Card
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xxl,
-                  AppSpacing.md,
-                  AppSpacing.xxl,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: prExerciseName != null
-                      ? PrToBeatCard(
-                          exerciseName: prExerciseName,
-                          currentPrKg: prCurrentKg,
-                          targetKg: prTargetKg,
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    dateStr,
+                                    style: AppTextStyles.micro(
+                                        AppColors.textSecondary),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    plan.dayName,
+                                    style: AppTextStyles.displayLarge(
+                                        AppColors.textPrimary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Avatar
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.heroGradient,
+                                borderRadius: BorderRadius.circular(
+                                    AppRadius.circle),
+                                boxShadow: AppColors.accentShadow,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                (profileName != null &&
+                                        profileName.isNotEmpty)
+                                    ? profileName[0].toUpperCase()
+                                    : 'A',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.bg,
+                                ),
+                              ),
+                            ),
+                          ],
                         )
-                      : const PrToBeatCard.empty(),
-                ),
-              ),
-              // Recovery Heatmap
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xxl,
-                  AppSpacing.sm,
-                  AppSpacing.xxl,
-                  0,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: RecoveryHeatmapCard(
-                    statuses: recoveryStatuses,
-                    summaryText: recoverySummary,
+                            .animate()
+                            .fadeIn(duration: 400.ms)
+                            .slideY(begin: -0.05, end: 0, duration: 400.ms),
+
+                        const SizedBox(height: AppSpacing.xl),
+
+                        // Pills row
+                        const Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
+                          children: [
+                            ForjaPill.accent(label: 'Day 3 of 4'),
+                            ForjaPill(label: '~52 min'),
+                            ForjaPill.warm(label: 'Ready'),
+                          ],
+                        ).animate().fadeIn(delay: 100.ms, duration: 350.ms),
+
+                        const SizedBox(height: AppSpacing.lg),
+
+                        // Readiness banner
+                        _readinessBanner(readiness)
+                            .animate()
+                            .fadeIn(delay: 180.ms, duration: 400.ms)
+                            .slideY(
+                              begin: 0.06,
+                              end: 0,
+                              delay: 180.ms,
+                              duration: 400.ms,
+                              curve: Curves.easeOutCubic,
+                            ),
+
+                        if (adaptivePlan.whyMessage != null) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          _whyBanner(adaptivePlan.whyMessage!),
+                        ],
+
+                        const SizedBox(height: AppSpacing.xxxl),
+
+                        // Section label
+                        Text(
+                          'EXERCISES',
+                          style: AppTextStyles.labelUppercase(
+                              AppColors.textSecondary),
+                        ).animate().fadeIn(delay: 220.ms, duration: 300.ms),
+
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              // Start button
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.xxl,
-                  AppSpacing.xxl,
-                  AppSpacing.xxl,
-                  AppSpacing.xxl,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: ForjaButton(
-                    label: 'Start Workout',
-                    onPressed: () => context.push('/workout', extra: {
-                      'exercises': sessionExercises,
-                      'dayName': plan.dayName,
-                    }),
+
+                if (adaptivePlan.isRestDay)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xxl),
+                    sliver: SliverToBoxAdapter(
+                      child: RestDayContent(
+                        workoutsThisWeek: adaptivePlan.workoutsThisWeek,
+                        setsThisWeek: adaptivePlan.setsThisWeek,
+                        volumeKgThisWeek: adaptivePlan.volumeKgThisWeek,
+                      ),
+                    ),
+                  )
+                else ...[
+                  // Exercise list
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xxl),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final exercise = sessionExercises[index];
+                          return ExerciseRow(
+                            exercise: exercise,
+                            index: index,
+                            onTap: () => _showDemoSheet(context, exercise),
+                            prSubtitle: prSubtitles[exercise.id],
+                            lastSessionSubtitle:
+                                lastSessionSubtitles[exercise.id],
+                          );
+                        },
+                        childCount: sessionExercises.length,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
+
+                  // PR to Beat Card
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.lg,
+                      AppSpacing.xxl,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: prExerciseName != null
+                          ? PrToBeatCard(
+                              exerciseName: prExerciseName,
+                              currentPrKg: prCurrentKg,
+                              targetKg: prTargetKg,
+                            )
+                          : const PrToBeatCard.empty(),
+                    ),
+                  ),
+
+                  // Recovery Heatmap
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.md,
+                      AppSpacing.xxl,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: RecoveryHeatmapCard(
+                        statuses: recoveryStatuses,
+                        summaryText: recoverySummary,
+                      ),
+                    ),
+                  ),
+
+                  // Start button
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.section,
+                      AppSpacing.xxl,
+                      AppSpacing.xxxl,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: ForjaButton(
+                        label: 'Start Workout',
+                        onPressed: () => context.push('/workout', extra: {
+                          'exercises': sessionExercises,
+                          'dayName': plan.dayName,
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -285,7 +337,11 @@ class TodayScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 16),
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.textSecondary,
+            size: 16,
+          ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
@@ -313,9 +369,7 @@ class TodayScreen extends ConsumerWidget {
       'red' => AppColors.coralDim,
       _ => AppColors.accentGlow,
     };
-    final Color zoneBorder = zoneColor.withAlpha(
-      (zoneColor.a * 255.0 * 0.3).round().clamp(0, 255),
-    );
+    final Color zoneBorder = zoneColor.withValues(alpha: 0.25);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -334,11 +388,8 @@ class TodayScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(AppRadius.circle),
               boxShadow: [
                 BoxShadow(
-                  color:
-                      zoneColor.withAlpha(
-                        (zoneColor.a * 255.0 * 0.4).round().clamp(0, 255),
-                      ),
-                  blurRadius: 6,
+                  color: zoneColor.withValues(alpha: 0.5),
+                  blurRadius: 8,
                   spreadRadius: 2,
                 ),
               ],

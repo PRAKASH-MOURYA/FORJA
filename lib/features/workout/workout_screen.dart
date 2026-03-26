@@ -33,7 +33,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int _elapsedSeconds = 0;
   bool _workoutStarted = false;
 
-  // Per-set state: weights and reps for current exercise
   late List<double> _setWeights;
   late List<int> _setReps;
   late List<bool> _setsDone;
@@ -114,7 +113,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       _showRestTimer = !_allSetsDone;
     });
 
-    // Auto-advance when all sets done
     if (_allSetsDone) {
       Future.delayed(const Duration(milliseconds: 400), () {
         if (!mounted) return;
@@ -178,9 +176,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         backgroundColor: AppColors.bg,
         appBar: AppBar(
           backgroundColor: AppColors.bg,
+          elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios,
-                color: AppColors.textSecondary, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.textSecondary,
+              size: 18,
+            ),
             onPressed: () async {
               await showModalBottomSheet(
                 context: context,
@@ -203,9 +205,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: AppSpacing.lg),
-              child: Text(
-                _formatTime(_elapsedSeconds),
-                style: AppTextStyles.bodyStrong(AppColors.warm),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.warmDim,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  _formatTime(_elapsedSeconds),
+                  style: AppTextStyles.bodyStrong(AppColors.warm),
+                ),
               ),
             ),
           ],
@@ -215,7 +227,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Exercise header (tappable for history).
+              // Exercise header
               GestureDetector(
                 onTap: () {
                   showModalBottomSheet(
@@ -234,34 +246,39 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     Expanded(
                       child: Text(
                         exercise.name,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: AppTextStyles.displayLarge(
+                            AppColors.textPrimary),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    const Icon(
-                      Icons.history,
-                      color: AppColors.textTertiary,
-                      size: 18,
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.bgElevated,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: const Icon(
+                        Icons.history_rounded,
+                        color: AppColors.textTertiary,
+                        size: 16,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.xs),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Exercise ${exerciseIndex + 1} of $totalExercises · ${exercise.muscle}',
-                style: AppTextStyles.body(AppColors.textSecondary),
+                style: AppTextStyles.micro(AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.xxl),
+
               // Set logging card
               ForjaCard(
                 padding: EdgeInsets.zero,
+                shadows: AppColors.cardShadow,
                 child: Column(
                   children: [
-                    // Header row
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.base,
@@ -271,32 +288,38 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         children: [
                           SizedBox(
                             width: 32,
-                            child: Text('SET',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.labelUppercase(
-                                    AppColors.textSecondary)),
+                            child: Text(
+                              'SET',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelUppercase(
+                                  AppColors.textSecondary),
+                            ),
                           ),
                           Expanded(
-                            child: Text('KG',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.labelUppercase(
-                                    AppColors.textSecondary)),
+                            child: Text(
+                              'KG',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelUppercase(
+                                  AppColors.textSecondary),
+                            ),
                           ),
                           Expanded(
-                            child: Text('REPS',
-                                textAlign: TextAlign.center,
-                                style: AppTextStyles.labelUppercase(
-                                    AppColors.textSecondary)),
+                            child: Text(
+                              'REPS',
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.labelUppercase(
+                                  AppColors.textSecondary),
+                            ),
                           ),
                           const SizedBox(width: 28),
                         ],
                       ),
                     ),
                     const Divider(height: 1, color: AppColors.border),
-                    // Set rows
                     ...List.generate(exercise.sets, (i) {
                       final isActive = i == _currentSetIndex;
-                      final isDone = i < exercise.sets && _setsDone[i];
+                      final isDone =
+                          i < exercise.sets && _setsDone[i];
                       return SetRow(
                         setNumber: i + 1,
                         weightKg: _setWeights[i],
@@ -317,46 +340,61 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              // Rest timer
+
+              const SizedBox(height: AppSpacing.xxl),
+
               if (_showRestTimer)
                 RestTimer(
                   totalSeconds: 90,
                   onComplete: () =>
                       setState(() => _showRestTimer = false),
-                  onSkip: () => setState(() => _showRestTimer = false),
+                  onSkip: () =>
+                      setState(() => _showRestTimer = false),
                 ),
-              const SizedBox(height: AppSpacing.lg),
+
+              if (_showRestTimer)
+                const SizedBox(height: AppSpacing.xxl),
+
               // Log set button
               if (!_allSetsDone)
                 ForjaButton(
-                  label: 'Log Set $_lastCompletedSet ✓',
-                  onPressed: _currentSetIndex >= 0 ? _logSet : null,
+                  label: _lastCompletedSet == 0
+                      ? 'Log Set 1'
+                      : 'Log Set ${_lastCompletedSet + 1}',
+                  onPressed:
+                      _currentSetIndex >= 0 ? _logSet : null,
                 ),
+
               const SizedBox(height: AppSpacing.xxl),
+
               // Bottom actions
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   TextButton(
                     onPressed: _advanceExercise,
-                    child: const Text(
+                    child: Text(
                       'Skip exercise',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 14,
-                      ),
+                      style: AppTextStyles.body(AppColors.textSecondary),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.xxl),
                   TextButton(
                     onPressed: _endWorkout,
-                    child: const Text(
-                      'End workout early',
-                      style: TextStyle(
-                        color: AppColors.coral,
-                        fontSize: 14,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.stop_circle_outlined,
+                          color: AppColors.coral,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'End workout',
+                          style: AppTextStyles.body(AppColors.coral),
+                        ),
+                      ],
                     ),
                   ),
                 ],
