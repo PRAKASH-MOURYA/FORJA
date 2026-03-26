@@ -5,13 +5,12 @@
 | # | Phase | Goal | Requirements | Plans |
 |---|-------|------|--------------|-------|
 | 1 | Build Verification | App runs clean on emulator | INFRA-01–04 | 2/2 DONE |
-| 2 | Supabase Backend | Schema + Auth live | SUPABASE-01–03, AUTH-01–05 | 3 DONE |
-| 3 | Core Loop Wiring | Real data flows through the loop | TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05 | 4 DONE |
-| 4 | History + Progress + Profile | All tabs show real data | HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04 | 3 DONE |
-| 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2/2 DONE |
-| 6 | Adaptive Engine | App adapts to user recovery | ADAPT-01–07 | 3 DONE |
-| 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 plans |
-| 7.1 | Workout UX Enhancements | Custom splits, session guard, PR card, heatmap | UX-01–07 | 3 plans |
+| 2 | Supabase Backend | Schema + Auth live | SUPABASE-01–03, AUTH-01–05 | 3 |
+| 3 | Core Loop Wiring | Real data flows through the loop | TODAY-01–05, WORKOUT-01–10, CHECKIN-01–05 | 4 |
+| 4 | History + Progress + Profile | All tabs show real data | HISTORY-01–03, PROGRESS-01–04, PROFILE-01–04 | 3 |
+| 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2 |
+| 6 | Adaptive Engine | App adapts to user recovery | v2 adaptive requirements | 3 |
+| 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 |
 | 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
 
 ---
@@ -97,8 +96,8 @@
 **Requirements:** SYNC-01–05, ONBOARD-01–04
 
 **Plans:**
-1. `sync-service` — SyncService: connectivity_plus listener, push all Hive pending records to Supabase, update sync_status **[DONE — 2026-03-22]**
-2. `onboarding-save` — Quiz completion creates UserProfile in Hive + syncs to Supabase profiles table **[DONE — 2026-03-22]**
+1. `sync-service` — SyncService: connectivity_plus listener, push all Hive pending records to Supabase, update sync_status
+2. `onboarding-save` — Quiz completion creates UserProfile in Hive + syncs to Supabase profiles table
 
 **Success Criteria:**
 1. Workout logs offline (airplane mode) then sync when connectivity restored
@@ -112,14 +111,10 @@
 ## Phase 6: Adaptive Engine
 **Goal:** App feels like it knows the user — adjusts next session based on check-in history.
 
-**Requirements:** ADAPT-01, ADAPT-02, ADAPT-03, ADAPT-04, ADAPT-05, ADAPT-06, ADAPT-07
-
-**Plans:** 3 plans
-
-Plans:
-- [x] 06-01-PLAN.md — readiness-score: Wire CalculationService to live readinessProvider; replace hardcoded banner with real zone colors **[DONE — 2026-03-22]**
-- [x] 06-02-PLAN.md — adaptive-rules: AdaptiveEngine service with 7 if/then rules; modifies next workout; WHY banner **[DONE — 2026-03-22]**
-- [x] 06-03-PLAN.md — rest-day-content: Smart rest day inline in TodayScreen (mobility, foam rolling, active recovery, weekly reflection) **[DONE — 2026-03-22]**
+**Plans:**
+1. `readiness-score` — Full ReadinessScore computation (energy 30%, soreness inverted 25%, sleep 20%, days since workout 15%, mood 10%); zone display (Green/Yellow/Red)
+2. `adaptive-rules` — AdaptiveEngine service: 7 if/then rules; modifies next workout; shows WHY banner to user
+3. `rest-day-content` — Smart rest day: mobility suggestions, foam rolling guide, active recovery, weekly progress reflection
 
 **Success Criteria:**
 1. After 3 high-soreness check-ins, next workout shows lighter session banner
@@ -132,13 +127,11 @@ Plans:
 ## Phase 7: Social + Retention
 **Goal:** Turn solo users into a community — streaks, challenges, shareable PR cards.
 
-**Plans:** 4 plans
-
-Plans:
-- [ ] 07-01-PLAN.md — xp-streaks: XpService + StreakService (pure, TDD); XpBanner on ProfileScreen; XP/streak wired into CompleteScreen
-- [ ] 07-02-PLAN.md — buddy-challenges: Supabase schema (challenges + challenge_participants), Challenge Freezed model, ChallengeScreen, deep link join via app_links
-- [ ] 07-03-PLAN.md — pr-share-cards: PrCardWidget (RepaintBoundary), PrCardService (share_plus v12), Share PR button on CompleteScreen
-- [ ] 07-04-PLAN.md — push-notifications: Firebase init, NotificationService (FCM + flutter_local_notifications), workout reminder scheduler, FCM token in Supabase
+**Plans:**
+1. `xp-streaks` — XP system (workout +100, PR +200, check-in +20); 6 levels; weekly streak + 1 shield/month; shown on Profile
+2. `buddy-challenges` — Volume battle, consistency challenge, 30-day challenge; invite via shareable link; Supabase leaderboard
+3. `pr-share-cards` — Auto-generated PR card; one-tap share to Instagram Stories / WhatsApp
+4. `push-notifications` — firebase_messaging; workout reminder, streak-at-risk, PR celebration; max 3/week
 
 **Success Criteria:**
 1. XP increases after workout completion
@@ -148,27 +141,6 @@ Plans:
 5. Push notification received for workout reminder
 
 ---
-
-### Phase 07.1: workout-ux-enhancements (INSERTED)
-
-**Goal:** Custom workout splits, persistent workout session (back-arrow guard), exercise history view, pre-workout exercise list with previous session data, readiness score by muscle group, PR to Beat Card on home screen, Muscle Recovery Heatmap on home screen
-**Requirements:** UX-01, UX-02, UX-03, UX-04, UX-05, UX-06, UX-07
-**Depends on:** Phase 7
-**Plans:** 3 plans
-
-Plans:
-- [ ] 07.1-01-PLAN.md — workout-guards-history: Session guard bottom sheet + exercise history bottom sheet on WorkoutScreen
-- [ ] 07.1-02-PLAN.md — today-ux-cards: MuscleRecoveryService, ExerciseRow last-session subtitle, PR to Beat Card, Recovery Heatmap, TodayScreen wiring
-- [ ] 07.1-03-PLAN.md — custom-split-builder: CustomSplit Freezed model (typeId=6), SplitDay (typeId=7), HiveService registration, SplitBuilderScreen, Profile entry point, router route
-
-**Success Criteria:**
-1. Back arrow mid-workout shows "Resume Workout / Discard & Exit" bottom sheet — does not exit without confirmation
-2. Tapping exercise name in WorkoutScreen opens history sheet showing last 3 sessions or empty state
-3. Each ExerciseRow on TodayScreen shows "Last: Xkg × Y" subtitle when prior set data exists
-4. PR to Beat Card appears below exercise list (exercise name + current PR + target +2.5 kg)
-5. Recovery Heatmap collapsed by default showing summary (e.g. "3 ready · 2 fatigued"); expands to 2-column color-coded muscle grid
-6. ProfileScreen shows "Build Split" button; SplitBuilderScreen saves CustomSplit to Hive
-7. flutter analyze 0 errors, flutter build apk --debug succeeds
 
 ## Phase 8: Advanced Features
 **Goal:** Holistic fitness companion with wearable data, nutrition basics, and data export.
@@ -186,6 +158,21 @@ Plans:
 
 ---
 
+### Phase 9: UI redesign — convert React Native Figma design to Flutter/Dart, remove old UI, verify backend connectivity
+
+**Goal:** All Flutter screens visually match the new_ui/ React design, all screens connect to existing backend providers, app compiles with zero errors, dead code removed.
+**Requirements:** No formal IDs — visual parity + backend connectivity + zero analyzer errors
+**Depends on:** Phase 8
+**Plans:** 4 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — Design system foundation: update theme tokens, Syne font, create 9 new F* shared widgets
+- [ ] 09-02-PLAN.md — Core loop screens: rewrite TodayScreen, WorkoutScreen, CompleteScreen + FBottomNav in shell
+- [ ] 09-03-PLAN.md — Data tab screens: rewrite HistoryScreen, ProgressScreen, ProfileScreen + UserProfile model extension
+- [ ] 09-04-PLAN.md — Auth/Onboarding + cleanup: rewrite AuthScreen, OnboardingScreen, QuizScreen; delete dead code
+
+---
+
 ## Phase Gates
 
 Each phase must pass before next begins:
@@ -196,5 +183,5 @@ Each phase must pass before next begins:
 - **Phase 5 gate:** Offline mode + sync verified (airplane mode test)
 - **Phase 6 gate:** Adaptive logic modifies workout based on check-in history
 - **Phase 7 gate:** Streak counting works, PR card shareable, notification received
-- **Phase 7.1 gate:** Session guard prevents accidental exits, heatmap shows on TodayScreen, custom split saves to Hive
 - **Phase 8 gate:** HealthKit/Health Connect data flows to readiness score
+- **Phase 9 gate:** flutter analyze: 0 errors; all 9 screens visually match new_ui/ design; backend providers wired
