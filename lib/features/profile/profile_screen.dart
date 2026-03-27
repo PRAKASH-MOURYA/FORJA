@@ -10,7 +10,9 @@ import '../../shared/providers/auth_provider.dart';
 import '../../shared/constants/programs.dart';
 import 'profile_stats_provider.dart';
 import 'xp_banner.dart';
+import 'widgets/export_section.dart';
 import '../../shared/services/hive_service.dart';
+import '../../shared/models/user_profile.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -220,19 +222,26 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xxxl),
 
                   // Settings
-                  const _SettingsGroup(
+                  _SettingsGroup(
                     label: 'ACCOUNT',
                     items: [
                       _SettingItem(
-                        icon: Icons.person_outline_rounded,
-                        title: 'Edit Profile',
+                        icon: Icons.monitor_weight_outlined,
+                        title: 'Body Metrics',
+                        subtitle: '${profile?.heightCm?.toStringAsFixed(0) ?? "--"} cm · ${profile?.bodyWeightKg?.toStringAsFixed(1) ?? "--"} kg',
+                        onTap: () => _showBodyMetricsEditor(context, ref, profile),
                       ),
                       _SettingItem(
+                        icon: Icons.person_outline_rounded,
+                        title: 'Edit Profile',
+                        onTap: () => _showEditProfile(context, ref, profile),
+                      ),
+                      const _SettingItem(
                         icon: Icons.notifications_outlined,
                         title: 'Notifications',
                         subtitle: 'Reminders & updates',
                       ),
-                      _SettingItem(
+                      const _SettingItem(
                         icon: Icons.lock_outline_rounded,
                         title: 'Privacy',
                       ),
@@ -272,6 +281,17 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.download_outlined,
                         title: 'Export Data',
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Data Export
+                  ExportSection(profile: profile),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  const _SettingsGroup(
+                    label: 'DANGER ZONE',
+                    items: [
                       _SettingItem(
                         icon: Icons.delete_outline_rounded,
                         title: 'Delete Account',
@@ -330,6 +350,170 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _showBodyMetricsEditor(BuildContext context, WidgetRef ref, UserProfile? profile) {
+    if (profile == null) return;
+
+    double? tempHeight = profile.heightCm;
+    double? tempWeight = profile.bodyWeightKg;
+
+    // Controllers created once outside StatefulBuilder to avoid recreation on rebuild
+    final heightController = TextEditingController(text: profile.heightCm?.toStringAsFixed(0) ?? '');
+    final weightController = TextEditingController(text: profile.bodyWeightKg?.toStringAsFixed(1) ?? '');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgElevated,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: AppSpacing.xxl,
+                right: AppSpacing.xxl,
+                top: AppSpacing.xl,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Body Metrics', style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: heightController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Height (cm)',
+                            filled: true,
+                            fillColor: AppColors.bgCard,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                          ),
+                          onChanged: (v) => tempHeight = double.tryParse(v),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: TextField(
+                          controller: weightController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: 'Weight (kg)',
+                            filled: true,
+                            fillColor: AppColors.bgCard,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                          ),
+                          onChanged: (v) => tempWeight = double.tryParse(v),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                      ),
+                      onPressed: () {
+                        ref.read(userProfileProvider.notifier).update(
+                              (p) => p.copyWith(
+                                heightCm: tempHeight,
+                                bodyWeightKg: tempWeight,
+                              ),
+                            );
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      // Dispose if user dismisses without saving
+      heightController.dispose();
+      weightController.dispose();
+    });
+  }
+
+  void _showEditProfile(BuildContext context, WidgetRef ref, UserProfile? profile) {
+    if (profile == null) return;
+
+    final nameController = TextEditingController(text: profile.name);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgElevated,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            left: AppSpacing.xxl,
+            right: AppSpacing.xxl,
+            top: AppSpacing.xl,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Edit Profile', style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  filled: true,
+                  fillColor: AppColors.bgCard,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                  ),
+                  onPressed: () {
+                    final newName = nameController.text.trim();
+                    if (newName.isNotEmpty) {
+                      ref.read(userProfileProvider.notifier).update(
+                            (p) => p.copyWith(name: newName),
+                          );
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
+          ),
+        );
+      },
+    ).whenComplete(() => nameController.dispose());
   }
 
   String _currentWeekLabel() {
@@ -461,7 +645,7 @@ class _SettingsGroup extends StatelessWidget {
                       color: AppColors.textTertiary,
                       size: 18,
                     ),
-                    onTap: () {},
+                    onTap: item.onTap ?? () {},
                   ),
                   if (i < items.length - 1)
                     Divider(
@@ -484,11 +668,13 @@ class _SettingItem {
   final String title;
   final String? subtitle;
   final bool isDestructive;
+  final VoidCallback? onTap;
 
   const _SettingItem({
     required this.icon,
     required this.title,
     this.subtitle,
     this.isDestructive = false,
+    this.onTap,
   });
 }

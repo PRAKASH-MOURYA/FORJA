@@ -28,6 +28,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   String? _equipment;
   // Q5 — injuries (multi-select)
   final Set<String> _injuries = {};
+  // Q6 — height
+  double? _heightCm;
+  // Q7 — weight
+  double? _weightKg;
 
   bool get _canAdvance {
     switch (_currentQuestion) {
@@ -41,13 +45,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         return _equipment != null;
       case 4:
         return true; // injuries optional
+      case 5:
+        return _heightCm != null && _heightCm! > 0;
+      case 6:
+        return _weightKg != null && _weightKg! > 0;
       default:
         return false;
     }
   }
 
   void _next() {
-    if (_currentQuestion < 4) {
+    if (_currentQuestion < 6) {
       setState(() => _currentQuestion++);
     } else {
       _finish();
@@ -77,6 +85,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       currentProgramId: programId,
       createdAt: DateTime.now(),
       onboardingComplete: true,
+      heightCm: _heightCm,
+      bodyWeightKg: _weightKg,
     );
 
     // 1. Save to Hive (always — even offline)
@@ -108,6 +118,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         'level': profile.level,
         'streak_weeks': profile.streakWeeks,
         'streak_shields': profile.streakShields,
+        'height_cm': profile.heightCm,
+        'body_weight_kg': profile.bodyWeightKg,
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
@@ -177,7 +189,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               else
                 const SizedBox(width: 18),
               Text(
-                '${_currentQuestion + 1} of 5',
+                '${_currentQuestion + 1} of 7',
                 style: AppTextStyles.caption(AppColors.textSecondary),
               ),
             ],
@@ -186,7 +198,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: (_currentQuestion + 1) / 5,
+              value: (_currentQuestion + 1) / 7,
               minHeight: 3,
               backgroundColor: AppColors.bgElevated,
               valueColor: const AlwaysStoppedAnimation(AppColors.accent),
@@ -209,6 +221,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         return _buildEquipmentQuestion();
       case 4:
         return _buildInjuriesQuestion();
+      case 5:
+        return _buildHeightQuestion();
+      case 6:
+        return _buildWeightQuestion();
       default:
         return const SizedBox.shrink();
     }
@@ -490,6 +506,102 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     );
   }
 
+  Widget _buildHeightQuestion() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('How tall are you?',
+              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Used to calculate protein targets and daily energy expenditure.',
+              style: AppTextStyles.body(AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.xxxl),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 175',
+                    hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: const BorderSide(color: AppColors.accent, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.bgCard,
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      _heightCm = double.tryParse(val);
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Text('cm', style: TextStyle(fontSize: 20, color: AppColors.textSecondary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeightQuestion() {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('What\'s your current weight?',
+              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Used to generate your daily protein target (1.6g per kg).',
+              style: AppTextStyles.body(AppColors.textSecondary)),
+          const SizedBox(height: AppSpacing.xxxl),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 75.5',
+                    hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: const BorderSide(color: AppColors.accent, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.bgCard,
+                  ),
+                  onChanged: (val) {
+                    setState(() {
+                      _weightKg = double.tryParse(val);
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Text('kg', style: TextStyle(fontSize: 20, color: AppColors.textSecondary)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBottomBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -499,7 +611,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         AppSpacing.xxl,
       ),
       child: ForjaButton(
-        label: _currentQuestion == 4 ? 'Start Training' : 'Next',
+        label: _currentQuestion == 6 ? 'Start Training' : 'Next',
         onPressed: _canAdvance ? _next : null,
       ),
     );
