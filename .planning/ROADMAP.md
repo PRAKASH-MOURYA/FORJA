@@ -11,7 +11,7 @@
 | 5 | Offline Sync + Onboarding | Full offline-first + onboard saves | SYNC-01–05, ONBOARD-01–04 | 2 |
 | 6 | Adaptive Engine | App adapts to user recovery | v2 adaptive requirements | 3 |
 | 7 | Social + Retention | Streaks, challenges, PR cards | v2 social requirements | 4 |
-| 8 | Advanced Features | Wearables, nutrition, export | v2 advanced requirements | 3 |
+| 8 | Advanced Features | Wearables, nutrition, export | WEAR-01–04, NUT-01–04, EXP-01–02 | 3 |
 
 ---
 
@@ -145,16 +145,20 @@
 ## Phase 8: Advanced Features
 **Goal:** Holistic fitness companion with wearable data, nutrition basics, and data export.
 
-**Plans:**
-1. `wearables` — health package (HealthKit + Health Connect); auto-import sleep/HR/HRV; upgraded readiness score
-2. `nutrition-basics` — Daily protein target; training vs rest day plate visual; water reminder; no calorie tracking
-3. `data-export` — CSV workout history export; monthly PDF progress summary
+**Requirements:** WEAR-01, WEAR-02, WEAR-03, WEAR-04, NUT-01, NUT-02, NUT-03, NUT-04, EXP-01, EXP-02
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Wearables: health package platform setup (Android + iOS), WearableService, WearableSnapshot model, upgraded CalculationService.readinessScore(), wearableProvider, ConnectHealthNudgeCard
+- [ ] 08-02-PLAN.md — Nutrition basics: UserProfile height/bodyWeightKg fields (HiveField 15/16), quiz steps, protein target card, plate visual card (training vs rest), water reminder notification toggle
+- [ ] 08-03-PLAN.md — Data export: ExportService (CSV + PDF via share_plus), ExportSection widget, ProfileScreen integration
 
 **Success Criteria:**
-1. Sleep hours auto-imported from HealthKit/Health Connect
-2. Protein target shown on Profile based on user goal
-3. CSV export downloads full workout history
-4. Monthly PDF generates with volume trend + PRs + consistency
+1. Sleep hours auto-imported from HealthKit/Health Connect; readiness banner shows source attribution
+2. Protein target card shows bodyWeightKg × 1.6 g on TodayScreen
+3. CSV export opens native share sheet with one row per SetLog
+4. Monthly PDF generates with volume bar chart, PR table, and consistency table
 
 ---
 
