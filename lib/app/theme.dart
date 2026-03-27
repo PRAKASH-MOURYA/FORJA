@@ -213,6 +213,27 @@ class AppTextStyles {
       fontSize: 18, fontWeight: FontWeight.w700, color: color);
 }
 
+/// Context extension for theme-aware colors.
+/// Use `context.appBg`, `context.appTextPrimary`, etc. in widgets.
+extension AppThemeX on BuildContext {
+  bool get isDark => Theme.of(this).brightness == Brightness.dark;
+  Color get appBg => isDark ? AppColors.bg : AppColors.bgLight;
+  Color get appBgCard => isDark ? AppColors.bgCard : AppColors.bgCardLight;
+  Color get appBgElevated =>
+      isDark ? AppColors.bgElevated : AppColors.bgElevatedLight;
+  Color get appTextPrimary =>
+      isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+  Color get appTextSecondary =>
+      isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+  Color get appTextTertiary =>
+      isDark ? AppColors.textTertiary : AppColors.textTertiaryLight;
+  Color get appBorder => isDark ? AppColors.border : AppColors.borderLight;
+  Color get appAccentGlow =>
+      isDark ? AppColors.accentGlow : AppColors.accentDimLight;
+  Color get appBorderAccent =>
+      isDark ? AppColors.borderAccent : AppColors.accentDimLight;
+}
+
 ThemeData buildDarkTheme() {
   return ThemeData(
     brightness: Brightness.dark,

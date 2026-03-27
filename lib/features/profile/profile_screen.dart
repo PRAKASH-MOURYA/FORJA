@@ -11,6 +11,7 @@ import '../../shared/constants/programs.dart';
 import 'profile_stats_provider.dart';
 import 'xp_banner.dart';
 import 'widgets/export_section.dart';
+import '../../shared/providers/theme_provider.dart';
 import '../../shared/services/hive_service.dart';
 import '../../shared/models/user_profile.dart';
 
@@ -21,6 +22,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileProvider);
     final stats = ref.watch(profileStatsProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     final name = profile?.name ?? 'Alex';
     final experience = _experienceLabel(profile?.experience);
@@ -28,7 +30,7 @@ class ProfileScreen extends ConsumerWidget {
         _programLabel(profile?.currentProgramId, profile?.customSplitId);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       body: Stack(
         children: [
           // Ambient header gradient
@@ -51,7 +53,7 @@ class ProfileScreen extends ConsumerWidget {
                 children: [
                   Text(
                     'Profile',
-                    style: AppTextStyles.displayLarge(AppColors.textPrimary),
+                    style: AppTextStyles.displayLarge(context.appTextPrimary),
                   ).animate().fadeIn(duration: 400.ms),
 
                   const SizedBox(height: AppSpacing.xxl),
@@ -77,7 +79,7 @@ class ProfileScreen extends ConsumerWidget {
                             style: const TextStyle(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.bg,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -89,13 +91,13 @@ class ProfileScreen extends ConsumerWidget {
                               Text(
                                 name,
                                 style: AppTextStyles.headingLarge(
-                                    AppColors.textPrimary),
+                                    context.appTextPrimary),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 '$experience · ${_currentWeekLabel()}',
                                 style:
-                                    AppTextStyles.body(AppColors.textSecondary),
+                                    AppTextStyles.body(context.appTextSecondary),
                               ),
                               const SizedBox(height: AppSpacing.sm),
                               ForjaPill.warm(label: _levelLabel(stats.level)),
@@ -150,10 +152,10 @@ class ProfileScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: AppColors.accentGlow,
+                      color: context.appAccentGlow,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                       border: Border.all(
-                          color: AppColors.borderAccent, width: 0.5),
+                          color: context.appBorderAccent, width: 0.5),
                       boxShadow: AppColors.accentShadow,
                     ),
                     child: Row(
@@ -165,13 +167,13 @@ class ProfileScreen extends ConsumerWidget {
                               Text(
                                 'Current Program',
                                 style: AppTextStyles.micro(
-                                    AppColors.textSecondary),
+                                    context.appTextSecondary),
                               ),
                               const SizedBox(height: AppSpacing.xs),
                               Text(
                                 programLabel,
                                 style:
-                                    AppTextStyles.subhead(AppColors.textPrimary),
+                                    AppTextStyles.subhead(context.appTextPrimary),
                               ),
                             ],
                           ),
@@ -196,23 +198,23 @@ class ProfileScreen extends ConsumerWidget {
                   ForjaCard(
                     onTap: () => context.push('/challenges'),
                     shadows: AppColors.subtleShadow,
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.groups_rounded, color: AppColors.accent),
-                        SizedBox(width: AppSpacing.md),
+                        const Icon(Icons.groups_rounded, color: AppColors.accent),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             'Buddy Challenges',
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: context.appTextPrimary,
                             ),
                           ),
                         ),
                         Icon(
                           Icons.chevron_right_rounded,
-                          color: AppColors.textTertiary,
+                          color: context.appTextTertiary,
                           size: 18,
                         ),
                       ],
@@ -248,20 +250,27 @@ class ProfileScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  const _SettingsGroup(
+                  _SettingsGroup(
                     label: 'APP',
                     items: [
                       _SettingItem(
-                        icon: Icons.dark_mode_outlined,
+                        icon: themeMode == ThemeMode.dark
+                            ? Icons.dark_mode_outlined
+                            : Icons.light_mode_outlined,
                         title: 'Appearance',
-                        subtitle: 'Dark mode',
+                        subtitle: themeMode == ThemeMode.dark
+                            ? 'Dark mode'
+                            : 'Light mode',
+                        onTap: () => ref
+                            .read(themeModeProvider.notifier)
+                            .toggleTheme(),
                       ),
-                      _SettingItem(
+                      const _SettingItem(
                         icon: Icons.tune_rounded,
                         title: 'Units',
                         subtitle: 'Metric (kg)',
                       ),
-                      _SettingItem(
+                      const _SettingItem(
                         icon: Icons.timer_outlined,
                         title: 'Rest Timer',
                         subtitle: '90 seconds default',
@@ -305,7 +314,7 @@ class ProfileScreen extends ConsumerWidget {
                   Center(
                     child: Text(
                       'FORJA v1.0.0',
-                      style: AppTextStyles.micro(AppColors.textTertiary),
+                      style: AppTextStyles.micro(context.appTextTertiary),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -321,7 +330,7 @@ class ProfileScreen extends ConsumerWidget {
   void _showProgramPicker(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.bgElevated,
+      backgroundColor: context.appBgElevated,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.xxl)),
@@ -334,10 +343,10 @@ class ProfileScreen extends ConsumerWidget {
               .map((program) => ListTile(
                     title: Text(program.name,
                         style: AppTextStyles.bodyStrong(
-                            AppColors.textPrimary)),
+                            context.appTextPrimary)),
                     subtitle: Text(program.description,
                         style: AppTextStyles.caption(
-                            AppColors.textSecondary)),
+                            context.appTextSecondary)),
                     onTap: () {
                       ref.read(userProfileProvider.notifier).update(
                             (p) => p.copyWith(
@@ -364,17 +373,17 @@ class ProfileScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.bgElevated,
+      backgroundColor: context.appBgElevated,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (innerCtx, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: MediaQuery.of(innerCtx).viewInsets.bottom,
                 left: AppSpacing.xxl,
                 right: AppSpacing.xxl,
                 top: AppSpacing.xl,
@@ -383,7 +392,7 @@ class ProfileScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Body Metrics', style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                  Text('Body Metrics', style: AppTextStyles.headingLarge(context.appTextPrimary)),
                   const SizedBox(height: AppSpacing.md),
                   Row(
                     children: [
@@ -394,7 +403,7 @@ class ProfileScreen extends ConsumerWidget {
                           decoration: InputDecoration(
                             labelText: 'Height (cm)',
                             filled: true,
-                            fillColor: AppColors.bgCard,
+                            fillColor: context.appBgCard,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                           ),
                           onChanged: (v) => tempHeight = double.tryParse(v),
@@ -408,7 +417,7 @@ class ProfileScreen extends ConsumerWidget {
                           decoration: InputDecoration(
                             labelText: 'Weight (kg)',
                             filled: true,
-                            fillColor: AppColors.bgCard,
+                            fillColor: context.appBgCard,
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                           ),
                           onChanged: (v) => tempWeight = double.tryParse(v),
@@ -458,7 +467,7 @@ class ProfileScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.bgElevated,
+      backgroundColor: context.appBgElevated,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
@@ -475,7 +484,7 @@ class ProfileScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Edit Profile', style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+              Text('Edit Profile', style: AppTextStyles.headingLarge(context.appTextPrimary)),
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: nameController,
@@ -483,7 +492,7 @@ class ProfileScreen extends ConsumerWidget {
                 decoration: InputDecoration(
                   labelText: 'Name',
                   filled: true,
-                  fillColor: AppColors.bgCard,
+                  fillColor: context.appBgCard,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                 ),
               ),
@@ -590,7 +599,7 @@ class _SettingsGroup extends StatelessWidget {
               left: AppSpacing.xs, bottom: AppSpacing.sm),
           child: Text(
             label,
-            style: AppTextStyles.labelUppercase(AppColors.textSecondary),
+            style: AppTextStyles.labelUppercase(context.appTextSecondary),
           ),
         ),
         ForjaCard(
@@ -611,7 +620,7 @@ class _SettingsGroup extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.bgElevated,
+                        color: context.appBgElevated,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       alignment: Alignment.center,
@@ -619,7 +628,7 @@ class _SettingsGroup extends StatelessWidget {
                         item.icon,
                         color: item.isDestructive
                             ? AppColors.coral
-                            : AppColors.textSecondary,
+                            : context.appTextSecondary,
                         size: 18,
                       ),
                     ),
@@ -630,19 +639,19 @@ class _SettingsGroup extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: item.isDestructive
                             ? AppColors.coral
-                            : AppColors.textPrimary,
+                            : context.appTextPrimary,
                       ),
                     ),
                     subtitle: item.subtitle != null
                         ? Text(
                             item.subtitle!,
                             style: AppTextStyles.caption(
-                                AppColors.textSecondary),
+                                context.appTextSecondary),
                           )
                         : null,
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: AppColors.textTertiary,
+                      color: context.appTextTertiary,
                       size: 18,
                     ),
                     onTap: item.onTap ?? () {},
@@ -651,7 +660,7 @@ class _SettingsGroup extends StatelessWidget {
                     Divider(
                       height: 1,
                       indent: AppSpacing.xxl + AppSpacing.lg + 36,
-                      color: AppColors.border,
+                      color: context.appBorder,
                     ),
                 ],
               );
