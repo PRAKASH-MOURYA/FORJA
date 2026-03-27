@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
 import '../../shared/widgets/forja_button.dart';
@@ -18,8 +18,13 @@ import '../exercise/exercise_demo_sheet.dart';
 import 'rest_day_content.dart';
 import 'widgets/pr_to_beat_card.dart';
 import 'widgets/recovery_heatmap_card.dart';
+import 'widgets/connect_health_nudge_card.dart';
+import '../../shared/providers/wearable_provider.dart';
+import 'widgets/plate_visual_card.dart';
+import 'widgets/protein_target_card.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
-class TodayScreen extends ConsumerWidget {
+class TodayScreen extends HookConsumerWidget {
   const TodayScreen({super.key});
 
   @override
@@ -28,6 +33,10 @@ class TodayScreen extends ConsumerWidget {
     final profileName = profile?.name;
     final adaptivePlan = ref.watch(adaptiveTodayProvider);
     final readiness = ref.watch(readinessProvider);
+
+    final nudgeDismissed = useState(false);
+    final permissionDenied = ref.watch(wearablePermissionDeniedProvider).valueOrNull ?? false;
+
     final now = DateTime.now();
     final dayName = _dayName(now.weekday).toUpperCase();
     final dateStr =
@@ -187,6 +196,12 @@ class TodayScreen extends ConsumerWidget {
                         const SizedBox(height: AppSpacing.lg),
 
                         // Readiness banner
+                        if (permissionDenied && !nudgeDismissed.value) ...[
+                          ConnectHealthNudgeCard(
+                            onDismiss: () => nudgeDismissed.value = true,
+                          ).animate().fadeIn(delay: 180.ms, duration: 400.ms),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                         _readinessBanner(readiness)
                             .animate()
                             .fadeIn(delay: 180.ms, duration: 400.ms)
@@ -285,6 +300,32 @@ class TodayScreen extends ConsumerWidget {
                         statuses: recoveryStatuses,
                         summaryText: recoverySummary,
                       ),
+                    ),
+                  ),
+
+                  // Nutrition: Protein Target
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.md,
+                      AppSpacing.xxl,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: ProteinTargetCard(profile: profile),
+                    ),
+                  ),
+
+                  // Nutrition: Plate Visual
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xxl,
+                      AppSpacing.md,
+                      AppSpacing.xxl,
+                      0,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: PlateVisualCard(isRestDay: adaptivePlan.isRestDay),
                     ),
                   ),
 
@@ -409,6 +450,13 @@ class TodayScreen extends ConsumerWidget {
                   readiness.description,
                   style: AppTextStyles.body(AppColors.textSecondary),
                 ),
+                if (readiness.sources != null && readiness.sources!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    readiness.sources!,
+                    style: AppTextStyles.micro(AppColors.textSecondary),
+                  ),
+                ],
               ],
             ),
           ),
