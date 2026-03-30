@@ -1,74 +1,88 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme.dart';
-import '../../shared/widgets/forja_card.dart';
-import '../../shared/widgets/forja_pill.dart';
-import '../../shared/widgets/stat_card.dart';
+import '../../shared/widgets/premium_card.dart';
+import '../../shared/widgets/section_header.dart';
+import '../../shared/constants/dummy_data.dart';
 import 'progress_provider.dart';
 
-class ProgressScreen extends ConsumerWidget {
+class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProgressScreen> createState() => _ProgressScreenState();
+}
+
+class _ProgressScreenState extends ConsumerState<ProgressScreen> {
+  int _selectedPeriod = 0; // 0=7D, 1=30D, 2=90D, 3=All
+  String _selectedLift = 'Barbell Bench Press';
+
+  static const _periods = ['7D', '30D', '90D', 'All'];
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(progressProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.bg : AppColors.bgLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
 
     if (!state.isLoading && state.workoutCount == 0) {
       return Scaffold(
-        backgroundColor: AppColors.bg,
+        backgroundColor: bg,
         body: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Progress',
-                        style:
-                            AppTextStyles.displayLarge(AppColors.textPrimary)),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(_currentWeekLabel(),
-                        style: AppTextStyles.body(AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: ForjaCard(
-                      child: Text(
-                        'Log your first workout to see progress.',
-                        style: AppTextStyles.body(AppColors.textSecondary),
-                        textAlign: TextAlign.center,
-                      ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Progress',
+                    style: AppTextStyles.displayLarge(textPrimary)),
+                const SizedBox(height: AppSpacing.xs),
+                Text('Start training to see your progress',
+                    style: AppTextStyles.body(isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textSecondaryLight)),
+                const Spacer(),
+                Center(
+                  child: PremiumCard(
+                    child: Column(
+                      children: [
+                        const Text('📊',
+                            style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Log your first workout to see progress.',
+                          style: AppTextStyles.body(isDark
+                              ? AppColors.textSecondary
+                              : AppColors.textSecondaryLight),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-            ],
+                const Spacer(),
+              ],
+            ),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: bg,
       body: Stack(
         children: [
-          // Ambient top gradient
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: 260,
             child: const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: AppColors.ambientGradient,
-              ),
+              decoration: BoxDecoration(gradient: AppColors.ambientGradient),
             ),
           ),
           SafeArea(
@@ -77,157 +91,114 @@ class ProgressScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
-                  Text('Progress',
-                      style:
-                          AppTextStyles.displayLarge(AppColors.textPrimary))
-                      .animate()
-                      .fadeIn(duration: 400.ms),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(_currentWeekLabel(),
-                      style: AppTextStyles.body(AppColors.textSecondary))
-                      .animate()
-                      .fadeIn(delay: 80.ms, duration: 350.ms),
+                  // ── HEADER + PERIOD SELECTOR ───────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Text('Progress',
+                            style: AppTextStyles.displayLarge(textPrimary)),
+                      ),
+                      _PeriodSelector(
+                        periods: _periods,
+                        selected: _selectedPeriod,
+                        onSelect: (i) => setState(() => _selectedPeriod = i),
+                      ),
+                    ],
+                  ).animate().fadeIn(duration: 400.ms),
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── SUMMARY CARDS ──────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _MiniStatCard(
+                          label: 'Volume',
+                          value: '${(state.totalVolumeKg / 1000).toStringAsFixed(1)}T',
+                          color: AppColors.accent,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _MiniStatCard(
+                          label: 'Sessions',
+                          value: state.workoutCount.toString(),
+                          color: AppColors.sky,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _MiniStatCard(
+                          label: 'PRs',
+                          value: state.prsThisWeek.toString(),
+                          color: AppColors.warm,
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
 
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // 2x2 stat grid
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          label: 'Total Volume',
-                          value: (state.totalVolumeKg / 1000)
-                              .toStringAsFixed(1),
-                          pillLabel: 'tonnes',
-                          pillBg: AppColors.accentDim,
-                          pillFg: AppColors.accent,
-                        ).animate().fadeIn(delay: 150.ms, duration: 400.ms),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: StatCard(
-                          label: 'Workouts',
-                          value: state.workoutCount.toString(),
-                          pillLabel: 'sessions',
-                          pillBg: AppColors.skyDim,
-                          pillFg: AppColors.sky,
-                        ).animate().fadeIn(delay: 210.ms, duration: 400.ms),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          label: 'Streak',
-                          value: '${state.streakWeeks} wk',
-                          pillLabel:
-                              state.streakWeeks > 0 ? 'ongoing' : '-',
-                          pillBg: AppColors.warmDim,
-                          pillFg: AppColors.warm,
-                        ).animate().fadeIn(delay: 270.ms, duration: 400.ms),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: StatCard(
-                          label: 'New PRs',
-                          value: state.prsThisWeek.toString(),
-                          pillLabel: 'this week',
-                          pillBg: AppColors.coralDim,
-                          pillFg: AppColors.coral,
-                        ).animate().fadeIn(delay: 330.ms, duration: 400.ms),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppSpacing.section),
-
-                  // Volume bar chart
-                  _VolumeBarChart(volumes: state.weeklyVolumes)
-                      .animate()
-                      .fadeIn(delay: 380.ms, duration: 400.ms),
-
-                  const SizedBox(height: AppSpacing.section),
-
-                  // PR celebration card
-                  if (state.recentPRs.isNotEmpty) ...[
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      decoration: BoxDecoration(
-                        color: AppColors.warmDim,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
-                        border: Border.all(
-                          color: AppColors.warm.withValues(alpha: 0.25),
-                          width: 0.5,
-                        ),
-                        boxShadow: AppColors.warmShadow,
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('🏆', style: TextStyle(fontSize: 28)),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'New PR!',
-                                  style:
-                                      AppTextStyles.bodyStrong(AppColors.warm),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${_formatExerciseName(state.recentPRs.first['exercise_id'] as String)} ${state.recentPRs.first['weight_kg']}kg × ${state.recentPRs.first['reps']}',
-                                  style: AppTextStyles.body(
-                                      AppColors.textPrimary),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                        .animate()
-                        .fadeIn(delay: 430.ms, duration: 400.ms)
-                        .shimmer(
-                          delay: 800.ms,
-                          duration: 1800.ms,
-                          color: AppColors.warm.withValues(alpha: 0.12),
-                        ),
-                    const SizedBox(height: AppSpacing.section),
-                  ],
-
-                  // 1RM trends
-                  Text(
-                    '1RM TRENDS',
-                    style: AppTextStyles.labelUppercase(
-                        AppColors.textSecondary),
-                  ).animate().fadeIn(delay: 480.ms, duration: 300.ms),
-                  const SizedBox(height: AppSpacing.md),
-                  ForjaCard(
-                    shadows: AppColors.subtleShadow,
-                    child: Column(
-                      children: state.liftTrends.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final trend = entry.value;
-                        final color = _getTrendColor(index);
-                        return Column(
-                          children: [
-                            _LiftTrendRow(
-                              name: trend.exerciseName,
-                              current: trend.currentOneRepMax,
-                              trendVal: trend.trendKg,
-                              color: color,
-                            ),
-                            if (index < state.liftTrends.length - 1)
-                              const SizedBox(height: AppSpacing.lg),
-                          ],
-                        );
-                      }).toList(),
+                  // ── VOLUME BAR CHART (fl_chart) ────────────────────────
+                  const SectionHeader('Weekly Volume',
+                      subtitle: 'kg per session'),
+                  PremiumCard(
+                    child: _VolumeBarChart(
+                      volumes: state.weeklyVolumes,
+                      isDark: isDark,
                     ),
-                  ).animate().fadeIn(delay: 520.ms, duration: 400.ms),
+                  ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // ── STRENGTH TRENDS (fl_chart) ─────────────────────────
+                  SectionHeader('Strength Trends', subtitle: 'My lifts',
+                      actionLabel: 'See all', onAction: () {}),
+                  _LiftSelector(
+                    lifts: DummyData.strengthTrends.keys.toList(),
+                    selected: _selectedLift,
+                    onSelect: (l) => setState(() => _selectedLift = l),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  PremiumCard(
+                    child: _StrengthLineChart(
+                      lift: _selectedLift,
+                      isDark: isDark,
+                    ),
+                  ).animate().fadeIn(delay: 240.ms, duration: 400.ms),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // ── PERSONAL RECORDS ───────────────────────────────────
+                  const SectionHeader('Personal Records'),
+                  ...state.liftTrends.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final trend = entry.value;
+                    return Padding(
+                      padding:
+                          const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: _PrCard(
+                        exerciseName: trend.exerciseName,
+                        weightKg: trend.currentOneRepMax,
+                        trendKg: trend.trendKg,
+                        colorIndex: i,
+                        isNew: i == 0 && state.prsThisWeek > 0,
+                      ).animate().fadeIn(
+                            delay: Duration(milliseconds: 300 + i * 60),
+                            duration: 400.ms,
+                          ),
+                    );
+                  }),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // ── CONSISTENCY HEATMAP ────────────────────────────────
+                  const SectionHeader('Consistency',
+                      subtitle: '12-week grid'),
+                  PremiumCard(
+                    child: _ConsistencyHeatmap(isDark: isDark),
+                  ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
 
                   const SizedBox(height: AppSpacing.xxl),
                 ],
@@ -238,91 +209,448 @@ class ProgressScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  String _currentWeekLabel() {
-    final now = DateTime.now();
-    final startOfYear = DateTime(now.year, 1, 4);
-    final weekNum =
-        ((now.difference(startOfYear).inDays) / 7).ceil();
-    return 'Week $weekNum · Getting stronger';
-  }
+// ── PERIOD SELECTOR ──────────────────────────────────────────────────────────
 
-  String _formatExerciseName(String id) {
-    final parts = id.split('_');
-    return parts
-        .map((p) => p.isEmpty
-            ? ''
-            : '${p[0].toUpperCase()}${p.substring(1)}')
-        .join(' ');
-  }
+class _PeriodSelector extends StatelessWidget {
+  final List<String> periods;
+  final int selected;
+  final ValueChanged<int> onSelect;
 
-  Color _getTrendColor(int index) {
-    const colors = [
-      AppColors.accent,
-      AppColors.sky,
-      AppColors.warm,
-      AppColors.coral,
-    ];
-    return colors[index % colors.length];
+  const _PeriodSelector(
+      {required this.periods, required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppColors.borderLight,
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        children: periods.asMap().entries.map((e) {
+          final isSelected = e.key == selected;
+          return GestureDetector(
+            onTap: () => onSelect(e.key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Text(
+                e.value,
+                style: AppTextStyles.micro(
+                  isSelected ? AppColors.bg : AppColors.textTertiary,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 
+// ── MINI STAT CARD ───────────────────────────────────────────────────────────
+
+class _MiniStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _MiniStatCard(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value,
+              style: AppTextStyles.dataMedium(
+                isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
+              )),
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.micro(color)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── VOLUME BAR CHART ─────────────────────────────────────────────────────────
+
 class _VolumeBarChart extends StatelessWidget {
   final List<double> volumes;
+  final bool isDark;
 
-  const _VolumeBarChart({required this.volumes});
-
-  static const _labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  static const _chartHeight = 110.0;
+  const _VolumeBarChart({required this.volumes, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final todayIndex = DateTime.now().weekday - 1;
+    double maxVal = volumes.fold(0.0, (a, b) => a > b ? a : b);
+    if (maxVal == 0) maxVal = 5000;
 
-    double maxVolume =
-        volumes.fold(0.0, (val, el) => val > el ? val : el);
-    if (maxVolume == 0) maxVolume = 1000.0;
-
-    return ForjaCard(
-      shadows: AppColors.subtleShadow,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Weekly Volume',
-                style: AppTextStyles.bodyStrong(AppColors.textPrimary),
+    return SizedBox(
+      height: 160,
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxVal * 1.2,
+          barTouchData: BarTouchData(
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) =>
+                  isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                  BarTooltipItem(
+                '${(rod.toY / 1000).toStringAsFixed(1)}T',
+                AppTextStyles.caption(AppColors.textPrimary),
               ),
-              Text(
-                'kg',
-                style: AppTextStyles.caption(AppColors.textSecondary),
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                  final i = value.toInt();
+                  return Text(
+                    labels[i.clamp(0, 6)],
+                    style: AppTextStyles.micro(
+                      i == todayIndex
+                          ? AppColors.accent
+                          : (isDark
+                              ? AppColors.textTertiary
+                              : AppColors.textTertiaryLight),
+                    ),
+                  );
+                },
+                reservedSize: 24,
+              ),
+            ),
+            leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) => FlLine(
+              color: isDark
+                  ? AppColors.border
+                  : AppColors.borderLight,
+              strokeWidth: 0.5,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: volumes.asMap().entries.map((e) {
+            final isToday = e.key == todayIndex;
+            return BarChartGroupData(
+              x: e.key,
+              barRods: [
+                BarChartRodData(
+                  toY: e.value,
+                  width: 18,
+                  borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(6)),
+                  gradient: isToday
+                      ? AppColors.accentGradient
+                      : null,
+                  color: isToday
+                      ? null
+                      : (isDark
+                          ? AppColors.bgElevated
+                          : AppColors.bgElevatedLight),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+        swapAnimationDuration: const Duration(milliseconds: 600),
+        swapAnimationCurve: Curves.easeOutCubic,
+      ),
+    );
+  }
+}
+
+// ── LIFT SELECTOR ─────────────────────────────────────────────────────────────
+
+class _LiftSelector extends StatelessWidget {
+  final List<String> lifts;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  const _LiftSelector(
+      {required this.lifts, required this.selected, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: lifts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+        itemBuilder: (context, i) {
+          final isSelected = lifts[i] == selected;
+          return GestureDetector(
+            onTap: () => onSelect(lifts[i]),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.accent
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.bgCard
+                        : AppColors.bgCardLight),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.accent
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.border
+                          : AppColors.borderLight),
+                ),
+              ),
+              child: Text(
+                lifts[i],
+                style: AppTextStyles.caption(
+                  isSelected ? AppColors.bg : AppColors.textSecondary,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── STRENGTH LINE CHART ───────────────────────────────────────────────────────
+
+class _StrengthLineChart extends StatelessWidget {
+  final String lift;
+  final bool isDark;
+
+  const _StrengthLineChart({required this.lift, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final data = DummyData.strengthTrends[lift] ?? [];
+    if (data.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xxl),
+          child: Text('No data yet',
+              style: AppTextStyles.body(AppColors.textSecondary)),
+        ),
+      );
+    }
+
+    final spots = data
+        .asMap()
+        .entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+    final minY = data.reduce((a, b) => a < b ? a : b) - 10;
+    final maxY = data.reduce((a, b) => a > b ? a : b) + 10;
+
+    return SizedBox(
+      height: 160,
+      child: LineChart(
+        LineChartData(
+          minY: minY,
+          maxY: maxY,
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              getTooltipColor: (_) =>
+                  isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+              getTooltipItems: (spots) => spots
+                  .map((s) => LineTooltipItem(
+                        '${s.y.toStringAsFixed(0)} kg',
+                        AppTextStyles.caption(AppColors.textPrimary),
+                      ))
+                  .toList(),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (_) => FlLine(
+              color: isDark ? AppColors.border : AppColors.borderLight,
+              strokeWidth: 0.5,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (val, _) {
+                  const labels = ['Wk1', 'Wk2', 'Wk3', 'Wk4'];
+                  final i = val.toInt();
+                  return Text(
+                    i < labels.length ? labels[i] : '',
+                    style: AppTextStyles.micro(
+                      isDark
+                          ? AppColors.textTertiary
+                          : AppColors.textTertiaryLight,
+                    ),
+                  );
+                },
+                reservedSize: 24,
+              ),
+            ),
+            leftTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(
+                sideTitles: SideTitles(showTitles: false)),
+          ),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              curveSmoothness: 0.35,
+              color: AppColors.accent,
+              barWidth: 2.5,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                  radius: 4,
+                  color: AppColors.accent,
+                  strokeWidth: 2,
+                  strokeColor: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+                ),
+              ),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.accent.withValues(alpha: 0.25),
+                    AppColors.accent.withValues(alpha: 0.0),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeOutCubic,
+      ),
+    );
+  }
+}
+
+// ── PR CARD ───────────────────────────────────────────────────────────────────
+
+class _PrCard extends StatelessWidget {
+  final String exerciseName;
+  final double weightKg;
+  final double trendKg;
+  final int colorIndex;
+  final bool isNew;
+
+  const _PrCard({
+    required this.exerciseName,
+    required this.weightKg,
+    required this.trendKg,
+    required this.colorIndex,
+    this.isNew = false,
+  });
+
+  static const _colors = [
+    AppColors.accent,
+    AppColors.sky,
+    AppColors.warm,
+    AppColors.coral,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = _colors[colorIndex % _colors.length];
+    if (weightKg == 0) return const SizedBox.shrink();
+
+    return PremiumCard(
+      showGradientBorder: isNew,
+      boxShadow: isNew ? AppColors.fireGlow : AppColors.subtleShadow,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exerciseName,
+                  style: AppTextStyles.bodyStrong(
+                    isDark
+                        ? AppColors.textPrimary
+                        : AppColors.textPrimaryLight,
+                  ),
+                ),
+                if (trendKg > 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '+${trendKg.toStringAsFixed(1)} kg since last month',
+                    style: AppTextStyles.caption(AppColors.accent),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) =>
+                    AppColors.heroGradient.createShader(bounds),
+                child: Text(
+                  '${weightKg.toStringAsFixed(0)}kg',
+                  style: AppTextStyles.dataMedium(Colors.white),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isNew ? AppColors.warm.withValues(alpha: 0.2) : color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  isNew ? 'NEW' : 'PR',
+                  style: AppTextStyles.micro(isNew ? AppColors.warm : color),
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(7, (i) {
-              final volume = volumes[i];
-              final isToday = i == todayIndex;
-              final barHeight = volume > 0
-                  ? (_chartHeight * (volume / maxVolume))
-                      .clamp(10.0, _chartHeight)
-                  : 10.0;
-              final isEmpty = volume == 0;
-
-              return _Bar(
-                height: barHeight,
-                maxHeight: _chartHeight,
-                label: _labels[i],
-                isToday: isToday,
-                isEmpty: isEmpty,
-                index: i,
-              );
-            }),
           ),
         ],
       ),
@@ -330,132 +658,84 @@ class _VolumeBarChart extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  final double height;
-  final double maxHeight;
-  final String label;
-  final bool isToday;
-  final bool isEmpty;
-  final int index;
+// ── CONSISTENCY HEATMAP ───────────────────────────────────────────────────────
 
-  const _Bar({
-    required this.height,
-    required this.maxHeight,
-    required this.label,
-    required this.isToday,
-    required this.isEmpty,
-    required this.index,
-  });
+class _ConsistencyHeatmap extends StatelessWidget {
+  final bool isDark;
+  const _ConsistencyHeatmap({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: maxHeight,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedContainer(
-              duration: Duration(milliseconds: 350 + index * 60),
-              curve: Curves.easeOutCubic,
-              width: 26,
-              height: height,
-              decoration: BoxDecoration(
-                gradient: isToday ? AppColors.heroGradient : null,
-                color: isToday ? null : AppColors.bgElevated,
-                borderRadius: BorderRadius.circular(6),
-                boxShadow: isToday ? AppColors.accentShadow : null,
-              ),
-            ).animate().scaleY(
-                  begin: 0,
-                  end: 1,
-                  alignment: Alignment.bottomCenter,
-                  duration: Duration(milliseconds: 450 + index * 50),
-                  curve: Curves.easeOutCubic,
-                  delay: Duration(milliseconds: 380 + index * 45),
-                ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isToday ? AppColors.accent : AppColors.textTertiary,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LiftTrendRow extends StatelessWidget {
-  final String name;
-  final double current;
-  final double trendVal;
-  final Color color;
-
-  const _LiftTrendRow({
-    required this.name,
-    required this.current,
-    required this.trendVal,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (current == 0) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(name,
-              style: AppTextStyles.bodyStrong(AppColors.textPrimary)),
-          Text('No data yet',
-              style: AppTextStyles.caption(AppColors.textSecondary)),
-        ],
-      );
-    }
-
-    final maxUi = current * 1.2;
-    final progress = (current / maxUi).clamp(0.0, 1.0);
-    final trendStr = trendVal > 0
-        ? '+${trendVal.toStringAsFixed(1)}'
-        : (trendVal < 0 ? trendVal.toStringAsFixed(1) : '—');
+    final grid = DummyData.consistencyGrid;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(name,
-                style: AppTextStyles.bodyStrong(AppColors.textPrimary)),
-            Row(
-              children: [
-                Text(
-                  '${current.toStringAsFixed(0)} kg',
-                  style: AppTextStyles.bodyStrong(AppColors.textSecondary),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                ForjaPill(
-                  label: trendVal != 0 ? '↑ $trendStr kg' : '—',
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  textColor: color,
-                ),
-              ],
+          children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+              .map((d) => Expanded(
+                    child: Center(
+                      child: Text(d,
+                          style: AppTextStyles.micro(
+                            isDark
+                                ? AppColors.textTertiary
+                                : AppColors.textTertiaryLight,
+                          )),
+                    ),
+                  ))
+              .toList(),
+        ),
+        const SizedBox(height: 6),
+        ...grid.map(
+          (week) => Padding(
+            padding: const EdgeInsets.only(bottom: 5),
+            child: Row(
+              children: week
+                  .map((day) => Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: day == 1
+                                ? AppColors.accent
+                                : (isDark
+                                    ? AppColors.bgElevated
+                                    : AppColors.bgElevatedLight),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ))
+                  .toList(),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 8,
-            backgroundColor: AppColors.bgElevated,
-            valueColor: AlwaysStoppedAnimation(color),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text('Less',
+                style: AppTextStyles.micro(
+                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
+                )),
+            const SizedBox(width: 6),
+            ...List.generate(
+              4,
+              (i) => Container(
+                width: 12,
+                height: 12,
+                margin: const EdgeInsets.only(left: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.2 + i * 0.25),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text('More',
+                style: AppTextStyles.micro(
+                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
+                )),
+          ],
         ),
       ],
     );

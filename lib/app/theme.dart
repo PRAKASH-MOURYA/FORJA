@@ -97,6 +97,92 @@ class AppColors {
       offset: const Offset(0, 3),
     ),
   ];
+
+  // New gradient tokens
+  static const splitGradient = LinearGradient(
+    colors: [Color(0xFF6EE7B7), Color(0xFF38BDF8)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const fireGradient = LinearGradient(
+    colors: [Color(0xFFF59E0B), Color(0xFFFB7185)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const holoGradient = SweepGradient(
+    colors: [
+      Color(0xFF6EE7B7),
+      Color(0xFF38BDF8),
+      Color(0xFFFB7185),
+      Color(0xFFF59E0B),
+      Color(0xFF6EE7B7),
+    ],
+    center: Alignment.center,
+  );
+
+  static const coralGradient = LinearGradient(
+    colors: [Color(0xFFFB7185), Color(0xFFF43F5E)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const skyGradient = LinearGradient(
+    colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const warmGradient = LinearGradient(
+    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // New glow tokens
+  static final mintGlow = [
+    BoxShadow(
+      color: const Color(0xFF6EE7B7).withValues(alpha: 0.45),
+      blurRadius: 32,
+      spreadRadius: 0,
+      offset: const Offset(0, 8),
+    ),
+    BoxShadow(
+      color: const Color(0xFF6EE7B7).withValues(alpha: 0.2),
+      blurRadius: 8,
+      spreadRadius: 0,
+      offset: const Offset(0, 2),
+    ),
+  ];
+
+  static final fireGlow = [
+    BoxShadow(
+      color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+      blurRadius: 24,
+      spreadRadius: 0,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  static final cardGlow = [
+    BoxShadow(
+      color: const Color(0xFF6EE7B7).withValues(alpha: 0.12),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: const Color(0xFF000000).withValues(alpha: 0.28),
+      blurRadius: 20,
+      spreadRadius: 0,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  // Animation tokens
+  static const Curve smoothIn = Curves.easeInOutCubic;
+  static const double noiseOpacity = 0.03;
 }
 
 class AppSpacing {

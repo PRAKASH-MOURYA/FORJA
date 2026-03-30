@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 
+import '../features/splash/splash_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/onboarding/quiz_screen.dart';
+import '../features/exercise/exercise_library_screen.dart';
 import '../features/today/today_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/progress/progress_screen.dart';
@@ -34,11 +36,15 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/today',
+    initialLocation: '/splash',
     redirect: (context, state) {
-      final isAuthRoute = state.matchedLocation == '/auth';
-      final isOnboardingRoute = state.matchedLocation == '/onboarding' ||
-          state.matchedLocation == '/quiz';
+      final loc = state.matchedLocation;
+      final isSplash = loc == '/splash';
+      final isAuthRoute = loc == '/auth';
+      final isOnboardingRoute = loc == '/onboarding' || loc == '/quiz';
+
+      // Splash always allowed through
+      if (isSplash) return null;
 
       // 1. Not authenticated and not guest → require auth
       if (!isAuthenticated && !isGuest) {
@@ -59,8 +65,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
         path: '/auth',
-        builder: (context, state) => const AuthScreen(),
+        pageBuilder: (context, state) => _fadeSlideTransition(
+          state, const AuthScreen()),
       ),
       GoRoute(
         path: '/onboarding',
@@ -76,19 +87,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/today',
-            builder: (context, state) => const TodayScreen(),
+            pageBuilder: (context, state) =>
+                _fadeSlideTransition(state, const TodayScreen()),
           ),
           GoRoute(
             path: '/history',
-            builder: (context, state) => const HistoryScreen(),
+            pageBuilder: (context, state) =>
+                _fadeSlideTransition(state, const HistoryScreen()),
+          ),
+          GoRoute(
+            path: '/exercises',
+            pageBuilder: (context, state) =>
+                _fadeSlideTransition(state, const ExerciseLibraryScreen()),
           ),
           GoRoute(
             path: '/progress',
-            builder: (context, state) => const ProgressScreen(),
+            pageBuilder: (context, state) =>
+                _fadeSlideTransition(state, const ProgressScreen()),
           ),
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const ProfileScreen(),
+            pageBuilder: (context, state) =>
+                _fadeSlideTransition(state, const ProfileScreen()),
           ),
         ],
       ),
@@ -129,6 +149,28 @@ final routerProvider = Provider<GoRouter>((ref) {
   );
 });
 
+CustomTransitionPage<void> _fadeSlideTransition(
+    GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(
+            parent: animation, curve: Curves.easeInOut),
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0.04, 0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+              parent: animation, curve: Curves.easeOutCubic)),
+          child: child,
+        ),
+      );
+    },
+  );
+}
+
 class ScaffoldWithBottomNav extends ConsumerStatefulWidget {
   final Widget child;
   const ScaffoldWithBottomNav({super.key, required this.child});
@@ -142,7 +184,7 @@ class _ScaffoldWithBottomNavState extends ConsumerState<ScaffoldWithBottomNav> {
   int _currentIndex = 0;
   StreamSubscription<Uri>? _deepLinkSub;
 
-  static const _tabs = ['/today', '/history', '/progress', '/profile'];
+  static const _tabs = ['/today', '/history', '/exercises', '/progress', '/profile'];
 
   @override
   void initState() {

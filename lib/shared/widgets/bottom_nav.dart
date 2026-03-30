@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/theme.dart';
 
 class ForjaBottomNav extends StatelessWidget {
@@ -53,10 +54,18 @@ class ForjaBottomNav extends StatelessWidget {
                     onTap: onTap,
                   ),
                   _NavItem(
+                    icon: Icons.fitness_center_outlined,
+                    activeIcon: Icons.fitness_center_rounded,
+                    label: 'Exercises',
+                    index: 2,
+                    current: currentIndex,
+                    onTap: onTap,
+                  ),
+                  _NavItem(
                     icon: Icons.bar_chart_outlined,
                     activeIcon: Icons.bar_chart_rounded,
                     label: 'Progress',
-                    index: 2,
+                    index: 3,
                     current: currentIndex,
                     onTap: onTap,
                   ),
@@ -64,7 +73,7 @@ class ForjaBottomNav extends StatelessWidget {
                     icon: Icons.person_outline_rounded,
                     activeIcon: Icons.person_rounded,
                     label: 'Profile',
-                    index: 3,
+                    index: 4,
                     current: currentIndex,
                     onTap: onTap,
                   ),
@@ -123,6 +132,7 @@ class _NavItemState extends State<_NavItem>
   }
 
   void _handleTap() {
+    HapticFeedback.lightImpact();
     _controller.forward().then((_) => _controller.reverse());
     widget.onTap(widget.index);
   }
@@ -150,7 +160,7 @@ class _NavItemState extends State<_NavItem>
                 child: Icon(
                   isActive ? widget.activeIcon : widget.icon,
                   color: color,
-                  size: 22,
+                  size: 20,
                   key: ValueKey(isActive),
                 ),
               ),

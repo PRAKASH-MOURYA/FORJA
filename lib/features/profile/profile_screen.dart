@@ -6,6 +6,9 @@ import '../../app/theme.dart';
 import '../../shared/widgets/forja_card.dart';
 import '../../shared/widgets/forja_pill.dart';
 import '../../shared/widgets/stat_card.dart';
+import '../../shared/widgets/animated_progress_ring.dart';
+import '../../shared/widgets/section_header.dart';
+import '../../shared/constants/dummy_data.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/constants/programs.dart';
 import 'profile_stats_provider.dart';
@@ -58,51 +61,42 @@ class ProfileScreen extends ConsumerWidget {
 
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // Profile card
-                  ForjaCard(
-                    shadows: AppColors.cardShadow,
-                    child: Row(
+                  // Hero profile section — XP ring + name
+                  Center(
+                    child: Column(
                       children: [
-                        // Gradient avatar
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.heroGradient,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.circle),
-                            boxShadow: AppColors.accentShadow,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                            style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                        AnimatedProgressRing(
+                          size: ProgressRingSize.md,
+                          progress: (stats.xp / DummyData.xpToNextLevel)
+                              .clamp(0.0, 1.0),
+                          center: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: const BoxDecoration(
+                              gradient: AppColors.heroGradient,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : 'A',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.lg),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: AppTextStyles.headingLarge(
-                                    context.appTextPrimary),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '$experience · ${_currentWeekLabel()}',
-                                style:
-                                    AppTextStyles.body(context.appTextSecondary),
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              ForjaPill.warm(label: _levelLabel(stats.level)),
-                            ],
-                          ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          name,
+                          style:
+                              AppTextStyles.headingLarge(context.appTextPrimary),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${_levelLabel(stats.level)} · $experience',
+                          style: AppTextStyles.subhead(context.appTextSecondary),
                         ),
                       ],
                     ),
@@ -145,6 +139,66 @@ class ProfileScreen extends ConsumerWidget {
                     streakWeeks: stats.streakWeeks,
                     streakShields: profile?.streakShields ?? 1,
                   ).animate().fadeIn(delay: 320.ms, duration: 350.ms),
+
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  // ── ACHIEVEMENTS GRID ────────────────────────────────
+                  SectionHeader(
+                    'Achievements',
+                    subtitle: '${DummyData.achievements.where((a) => a['earned'] == true).length}/${DummyData.achievements.length}',
+                  ),
+                  GridView.count(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: DummyData.achievements.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final badge = entry.value;
+                      final earned = badge['earned'] as bool;
+                      return GestureDetector(
+                        onTap: earned
+                            ? () => _showBadgeDetail(context, badge)
+                            : null,
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: earned ? AppColors.holoGradient : null,
+                                color: earned ? null : context.appBgElevated,
+                                boxShadow: earned ? AppColors.mintGlow : null,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                badge['icon'] as String,
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  color: earned ? null : Colors.transparent,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              badge['name'] as String,
+                              style: AppTextStyles.micro(
+                                earned ? context.appTextSecondary : context.appTextTertiary,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ).animate().fadeIn(
+                        delay: Duration(milliseconds: 360 + i * 40),
+                        duration: 350.ms,
+                      );
+                    }).toList(),
+                  ),
 
                   const SizedBox(height: AppSpacing.md),
 
@@ -323,6 +377,32 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showBadgeDetail(BuildContext context, Map<String, dynamic> badge) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.appBgElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(badge['icon'] as String, style: const TextStyle(fontSize: 48)),
+            const SizedBox(height: AppSpacing.md),
+            Text(badge['name'] as String,
+                style: AppTextStyles.headingLarge(context.appTextPrimary)),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Badge earned!',
+                style: AppTextStyles.body(context.appTextSecondary)),
+            const SizedBox(height: AppSpacing.xxl),
+          ],
+        ),
       ),
     );
   }
@@ -523,14 +603,6 @@ class ProfileScreen extends ConsumerWidget {
         );
       },
     ).whenComplete(() => nameController.dispose());
-  }
-
-  String _currentWeekLabel() {
-    final now = DateTime.now();
-    final startOfYear = DateTime(now.year, 1, 4);
-    final weekNum =
-        ((now.difference(startOfYear).inDays) / 7).ceil();
-    return 'Week $weekNum';
   }
 
   String _levelLabel(String level) {

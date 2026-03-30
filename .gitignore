@@ -1,0 +1,36 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/google-services.json
+
+# iOS
+ios/.symlinks/
+ios/Flutter/.last_build_id
+ios/Pods/
+
+# Generated files (keep in repo for CI)
+# *.g.dart
+# *.freezed.dart
+
+# Env / secrets
+.env
+*.env
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

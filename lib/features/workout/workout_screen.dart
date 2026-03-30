@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
-import '../../shared/widgets/forja_button.dart';
-import '../../shared/widgets/forja_card.dart';
-import '../../shared/widgets/set_row.dart';
-import '../../shared/widgets/rest_timer.dart';
+import '../../shared/widgets/premium_card.dart';
+import '../../shared/widgets/animated_progress_ring.dart';
+import '../../shared/widgets/section_header.dart';
 import '../../shared/providers/workout_provider.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/models/exercise.dart';
 import '../../shared/models/set_log.dart';
 import 'exercise_history_sheet.dart';
 import 'session_guard_sheet.dart';
+import 'widgets/exercise_hero_card.dart';
+import 'widgets/set_bubble_row.dart';
+import 'widgets/log_set_panel.dart';
+import 'widgets/rest_timer_sheet.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
   final List<Exercise> exercises;
@@ -48,7 +51,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   void _startWorkout() {
     if (_workoutStarted) return;
     _workoutStarted = true;
-
     final profile = ref.read(userProfileProvider);
     ref.read(workoutProvider.notifier).startWorkout(
           widget.dayName,
@@ -77,13 +79,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     super.dispose();
   }
 
-  String _formatTime(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
+  String get _elapsedFormatted {
+    final m = _elapsedSeconds ~/ 60;
+    final s = _elapsedSeconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  int get _currentSetIndex => _setsDone.indexWhere((done) => !done);
+  int get _currentSetIndex => _setsDone.indexWhere((d) => !d);
   bool get _allSetsDone => _setsDone.every((d) => d);
 
   void _logSet() {
@@ -139,265 +141,251 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     if (mounted) context.push('/workout/complete');
   }
 
+  Future<void> _showGuard() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SessionGuardSheet(
+        onResume: () => Navigator.of(ctx).pop(),
+        onDiscard: () {
+          Navigator.of(ctx).pop();
+          context.pop();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final workoutState = ref.watch(workoutProvider);
     final exercise = workoutState.currentExercise;
     final exerciseIndex = workoutState.currentExerciseIndex;
     final totalExercises = workoutState.exercises.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (exercise == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.bg,
-        body: Center(
+      return Scaffold(
+        backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
+        body: const Center(
           child: CircularProgressIndicator(color: AppColors.accent),
         ),
       );
     }
 
+    final completedExercises =
+        workoutState.completedSets.map((s) => s.exerciseId).toSet().length;
+    final totalSets = workoutState.exercises.fold<int>(0, (s, e) => s + e.sets);
+    final completedSets = workoutState.completedSets.where((s) => s.completed).length;
+    final overallProgress = totalExercises > 0
+        ? completedExercises / totalExercises
+        : 0.0;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, __) async {
-        if (didPop) return;
-        await showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (sheetContext) => SessionGuardSheet(
-            onResume: () => Navigator.of(sheetContext).pop(),
-            onDiscard: () {
-              Navigator.of(sheetContext).pop();
-              context.pop();
-            },
-          ),
-        );
+        if (!didPop) await _showGuard();
       },
       child: Scaffold(
-        backgroundColor: AppColors.bg,
-        appBar: AppBar(
-          backgroundColor: AppColors.bg,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textSecondary,
-              size: 18,
-            ),
-            onPressed: () async {
-              await showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (sheetContext) => SessionGuardSheet(
-                  onResume: () => Navigator.of(sheetContext).pop(),
-                  onDiscard: () {
-                    Navigator.of(sheetContext).pop();
-                    context.pop();
-                  },
-                ),
-              );
-            },
-          ),
-          title: Text(
-            widget.dayName,
-            style: AppTextStyles.heading(AppColors.textPrimary),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.lg),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.warmDim,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Text(
-                  _formatTime(_elapsedSeconds),
-                  style: AppTextStyles.bodyStrong(AppColors.warm),
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+        backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
+        body: SafeArea(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Exercise header
-              GestureDetector(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => ExerciseHistorySheet(
-                      exerciseId: exercise.id,
-                      exerciseName: exercise.name,
-                    ),
-                  );
-                },
-                behavior: HitTestBehavior.opaque,
+              // ── TOP BAR ────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
                 child: Row(
                   children: [
+                    GestureDetector(
+                      onTap: _showGuard,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: isDark ? AppColors.border : AppColors.borderLight,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.close_rounded,
+                          color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Text(
-                        exercise.name,
-                        style: AppTextStyles.displayLarge(
-                            AppColors.textPrimary),
+                        widget.dayName.toUpperCase(),
+                        style: AppTextStyles.labelUppercase(
+                          isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
+                    const SizedBox(width: AppSpacing.md),
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm, vertical: 6),
                       decoration: BoxDecoration(
-                        color: AppColors.bgElevated,
+                        color: AppColors.warmDim,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
-                      child: const Icon(
-                        Icons.history_rounded,
-                        color: AppColors.textTertiary,
-                        size: 16,
+                      child: Text(
+                        _elapsedFormatted,
+                        style: AppTextStyles.bodyStrong(AppColors.warm),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Exercise ${exerciseIndex + 1} of $totalExercises · ${exercise.muscle}',
-                style: AppTextStyles.micro(AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
 
-              // Set logging card
-              ForjaCard(
-                padding: EdgeInsets.zero,
-                shadows: AppColors.cardShadow,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.base,
-                        vertical: AppSpacing.md,
-                      ),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 32,
-                            child: Text(
-                              'SET',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.labelUppercase(
-                                  AppColors.textSecondary),
-                            ),
+              // ── SCROLLABLE BODY ─────────────────────────────────────────
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Exercise hero card
+                      ExerciseHeroCard(
+                        exercise: exercise,
+                        exerciseIndex: exerciseIndex,
+                        totalExercises: totalExercises,
+                        onHistoryTap: () => showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => ExerciseHistorySheet(
+                            exerciseId: exercise.id,
+                            exerciseName: exercise.name,
                           ),
-                          Expanded(
-                            child: Text(
-                              'KG',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.labelUppercase(
-                                  AppColors.textSecondary),
-                            ),
-                          ),
-                          Expanded(
-                            child: Text(
-                              'REPS',
-                              textAlign: TextAlign.center,
-                              style: AppTextStyles.labelUppercase(
-                                  AppColors.textSecondary),
-                            ),
-                          ),
-                          const SizedBox(width: 28),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: AppColors.border),
-                    ...List.generate(exercise.sets, (i) {
-                      final isActive = i == _currentSetIndex;
-                      final isDone =
-                          i < exercise.sets && _setsDone[i];
-                      return SetRow(
-                        setNumber: i + 1,
-                        weightKg: _setWeights[i],
-                        reps: _setReps[i],
-                        isActive: isActive,
-                        isDone: isDone,
-                        onWeightChanged: (w) =>
-                            setState(() => _setWeights[i] = w),
-                        onRepsChanged: (r) =>
-                            setState(() => _setReps[i] = r),
-                        onToggleDone: () {
-                          if (!isDone && i == _currentSetIndex) {
-                            _logSet();
-                          }
-                        },
-                      );
-                    }),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.xxl),
-
-              if (_showRestTimer)
-                RestTimer(
-                  totalSeconds: 90,
-                  onComplete: () =>
-                      setState(() => _showRestTimer = false),
-                  onSkip: () =>
-                      setState(() => _showRestTimer = false),
-                ),
-
-              if (_showRestTimer)
-                const SizedBox(height: AppSpacing.xxl),
-
-              // Log set button
-              if (!_allSetsDone)
-                ForjaButton(
-                  label: _lastCompletedSet == 0
-                      ? 'Log Set 1'
-                      : 'Log Set ${_lastCompletedSet + 1}',
-                  onPressed:
-                      _currentSetIndex >= 0 ? _logSet : null,
-                ),
-
-              const SizedBox(height: AppSpacing.xxl),
-
-              // Bottom actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: _advanceExercise,
-                    child: Text(
-                      'Skip exercise',
-                      style: AppTextStyles.body(AppColors.textSecondary),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xxl),
-                  TextButton(
-                    onPressed: _endWorkout,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.stop_circle_outlined,
-                          color: AppColors.coral,
-                          size: 14,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'End workout',
-                          style: AppTextStyles.body(AppColors.coral),
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // ── OVERALL PROGRESS RING ─────────────────────────
+                      Center(
+                        child: AnimatedProgressRing(
+                          progress: overallProgress,
+                          size: ProgressRingSize.lg,
+                          center: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$completedSets',
+                                style: AppTextStyles.dataLarge(
+                                  isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
+                                ),
+                              ),
+                              Text(
+                                '/ $totalSets sets',
+                                style: AppTextStyles.caption(
+                                  isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                                ),
+                              ),
+                              Text(
+                                'TOTAL',
+                                style: AppTextStyles.micro(
+                                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // ── SET BUBBLES ────────────────────────────────────
+                      SectionHeader('Sets'),
+                      SetBubbleRow(
+                        totalSets: exercise.sets,
+                        currentSetIndex: _currentSetIndex,
+                        setsDone: _setsDone,
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // ── LOG SET PANEL ──────────────────────────────────
+                      if (!_allSetsDone)
+                        LogSetPanel(
+                          setNumber: _lastCompletedSet + 1,
+                          weightKg: _currentSetIndex >= 0
+                              ? _setWeights[_currentSetIndex]
+                              : exercise.defaultKg,
+                          reps: _currentSetIndex >= 0
+                              ? _setReps[_currentSetIndex]
+                              : exercise.reps,
+                          onWeightChanged: (w) {
+                            if (_currentSetIndex >= 0) {
+                              setState(() => _setWeights[_currentSetIndex] = w);
+                            }
+                          },
+                          onRepsChanged: (r) {
+                            if (_currentSetIndex >= 0) {
+                              setState(() => _setReps[_currentSetIndex] = r);
+                            }
+                          },
+                          onLogSet: _currentSetIndex >= 0 ? _logSet : null,
+                          isEnabled: _currentSetIndex >= 0 && !_showRestTimer,
+                        ),
+
+                      // ── REST TIMER ─────────────────────────────────────
+                      if (_showRestTimer) ...[
+                        const SizedBox(height: AppSpacing.lg),
+                        PremiumCard(
+                          boxShadow: AppColors.fireGlow,
+                          child: RestTimerSheet(
+                            totalSeconds: 90,
+                            onComplete: () =>
+                                setState(() => _showRestTimer = false),
+                            onSkip: () =>
+                                setState(() => _showRestTimer = false),
+                          ),
                         ),
                       ],
-                    ),
+
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      // ── BOTTOM ACTIONS ────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: _advanceExercise,
+                            child: Text(
+                              'Skip exercise',
+                              style: AppTextStyles.body(AppColors.textSecondary),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xl),
+                          TextButton(
+                            onPressed: _endWorkout,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.stop_circle_outlined,
+                                    color: AppColors.coral, size: 14),
+                                const SizedBox(width: 4),
+                                Text('End workout',
+                                    style: AppTextStyles.body(AppColors.coral)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: AppSpacing.xxxl),
+                    ],
                   ),
-                ],
+                ),
               ),
             ],
           ),

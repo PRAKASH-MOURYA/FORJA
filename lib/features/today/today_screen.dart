@@ -3,9 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
-import '../../shared/widgets/forja_button.dart';
-import '../../shared/widgets/forja_pill.dart';
 import '../../shared/widgets/exercise_row.dart';
+import '../../shared/widgets/section_header.dart';
 import '../../shared/repositories/workout_repository.dart';
 import '../../shared/repositories/pr_repository.dart';
 import '../../shared/models/exercise.dart';
@@ -22,6 +21,9 @@ import 'widgets/connect_health_nudge_card.dart';
 import '../../shared/providers/wearable_provider.dart';
 import 'widgets/plate_visual_card.dart';
 import 'widgets/protein_target_card.dart';
+import 'widgets/hero_workout_card.dart';
+import 'widgets/stats_row.dart';
+import 'widgets/quick_actions_row.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 class TodayScreen extends HookConsumerWidget {
@@ -35,12 +37,12 @@ class TodayScreen extends HookConsumerWidget {
     final readiness = ref.watch(readinessProvider);
 
     final nudgeDismissed = useState(false);
-    final permissionDenied = ref.watch(wearablePermissionDeniedProvider).valueOrNull ?? false;
+    final permissionDenied =
+        ref.watch(wearablePermissionDeniedProvider).valueOrNull ?? false;
 
     final now = DateTime.now();
-    final dayName = _dayName(now.weekday).toUpperCase();
-    final dateStr =
-        '$dayName, ${_monthName(now.month).toUpperCase()} ${now.day}';
+    final dayOfWeek = _dayName(now.weekday).toUpperCase();
+    final greeting = _greeting(now.hour);
 
     if (adaptivePlan == null) {
       return const Scaffold(
@@ -51,7 +53,6 @@ class TodayScreen extends HookConsumerWidget {
       );
     }
     final plan = adaptivePlan.basePlan;
-
     final sessionExercises = plan.exercises
         .where((e) => !adaptivePlan.isExerciseRemoved(e.id))
         .toList();
@@ -74,7 +75,6 @@ class TodayScreen extends HookConsumerWidget {
             'Last: ${best.weightKg.toStringAsFixed(0)}kg × ${best.reps}';
         break;
       }
-
       final pr = prRepo.getLatestPRForExercise(exercise.id);
       if (pr != null) {
         final weightKg = (pr['weight_kg'] as num).toDouble();
@@ -99,16 +99,22 @@ class TodayScreen extends HookConsumerWidget {
     final recoveryStatuses = recoveryService.getRecoveryStatuses();
     final recoverySummary = recoveryService.summaryText(recoveryStatuses);
 
+    final streakWeeks = profile?.streakWeeks ?? 0;
+    final xp = profile?.xp ?? 0;
+    final volumeTonnes = adaptivePlan.volumeKgThisWeek / 1000;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
       body: Stack(
         children: [
-          // Ambient gradient overlay at top
+          // Ambient gradient overlay
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 320,
+            height: 340,
             child: const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: AppColors.ambientGradient,
@@ -129,7 +135,7 @@ class TodayScreen extends HookConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header row
+                        // ── HERO HEADER ──────────────────────────────────────
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -138,37 +144,69 @@ class TodayScreen extends HookConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    dateStr,
-                                    style: AppTextStyles.micro(
-                                        AppColors.textSecondary),
+                                    dayOfWeek,
+                                    style: AppTextStyles.labelUppercase(
+                                      isDark
+                                          ? AppColors.textTertiary
+                                          : AppColors.textTertiaryLight,
+                                    ),
                                   ),
-                                  const SizedBox(height: AppSpacing.xs),
+                                  const SizedBox(height: 2),
                                   Text(
-                                    plan.dayName,
-                                    style: AppTextStyles.displayLarge(
-                                        AppColors.textPrimary),
+                                    '$greeting, ${profileName?.split(' ').first ?? 'Athlete'}',
+                                    style: AppTextStyles.headingLarge(
+                                      isDark
+                                          ? AppColors.textPrimary
+                                          : AppColors.textPrimaryLight,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
+                            const SizedBox(width: AppSpacing.md),
+                            // Notification bell
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.bgCard
+                                    : AppColors.bgCardLight,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.lg),
+                                border: Border.all(
+                                  color: isDark
+                                      ? AppColors.border
+                                      : AppColors.borderLight,
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.notifications_none_rounded,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textSecondaryLight,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
                             // Avatar
                             Container(
-                              width: 46,
-                              height: 46,
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
                                 gradient: AppColors.heroGradient,
-                                borderRadius: BorderRadius.circular(
-                                    AppRadius.circle),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.circle),
                                 boxShadow: AppColors.accentShadow,
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                (profileName != null &&
-                                        profileName.isNotEmpty)
-                                    ? profileName[0].toUpperCase()
+                                profileName?.isNotEmpty == true
+                                    ? profileName![0].toUpperCase()
                                     : 'A',
                                 style: const TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   color: AppColors.bg,
                                 ),
@@ -182,52 +220,27 @@ class TodayScreen extends HookConsumerWidget {
 
                         const SizedBox(height: AppSpacing.xl),
 
-                        // Pills row
-                        const Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: [
-                            ForjaPill.accent(label: 'Day 3 of 4'),
-                            ForjaPill(label: '~52 min'),
-                            ForjaPill.warm(label: 'Ready'),
-                          ],
-                        ).animate().fadeIn(delay: 100.ms, duration: 350.ms),
-
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Readiness banner
+                        // ── READINESS BANNER ─────────────────────────────────
                         if (permissionDenied && !nudgeDismissed.value) ...[
                           ConnectHealthNudgeCard(
                             onDismiss: () => nudgeDismissed.value = true,
-                          ).animate().fadeIn(delay: 180.ms, duration: 400.ms),
-                          const SizedBox(height: AppSpacing.md),
+                          ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
+                          const SizedBox(height: AppSpacing.sm),
                         ],
+
                         _readinessBanner(readiness)
                             .animate()
-                            .fadeIn(delay: 180.ms, duration: 400.ms)
-                            .slideY(
-                              begin: 0.06,
-                              end: 0,
-                              delay: 180.ms,
-                              duration: 400.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
+                            .fadeIn(delay: 100.ms, duration: 400.ms),
 
                         if (adaptivePlan.whyMessage != null) ...[
                           const SizedBox(height: AppSpacing.sm),
-                          _whyBanner(adaptivePlan.whyMessage!),
+                          _whyBanner(adaptivePlan.whyMessage!, isDark),
                         ],
 
-                        const SizedBox(height: AppSpacing.xxxl),
-
-                        // Section label
-                        Text(
-                          'EXERCISES',
-                          style: AppTextStyles.labelUppercase(
-                              AppColors.textSecondary),
-                        ).animate().fadeIn(delay: 220.ms, duration: 300.ms),
-
-                        const SizedBox(height: AppSpacing.sm),
+                        if (readiness != null ||
+                            (permissionDenied && !nudgeDismissed.value) ||
+                            adaptivePlan.whyMessage != null)
+                          const SizedBox(height: AppSpacing.xl),
                       ],
                     ),
                   ),
@@ -246,7 +259,56 @@ class TodayScreen extends HookConsumerWidget {
                     ),
                   )
                 else ...[
-                  // Exercise list
+                  // ── HERO WORKOUT CARD ────────────────────────────────────
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.xxl),
+                    sliver: SliverToBoxAdapter(
+                      child: HeroWorkoutCard(
+                        dayName: plan.dayName,
+                        exercises: sessionExercises,
+                        onStart: () => context.push('/workout', extra: {
+                          'exercises': sessionExercises,
+                          'dayName': plan.dayName,
+                        }),
+                      )
+                          .animate()
+                          .fadeIn(delay: 120.ms, duration: 450.ms)
+                          .slideY(
+                              begin: 0.06,
+                              end: 0,
+                              delay: 120.ms,
+                              duration: 450.ms,
+                              curve: Curves.easeOutCubic),
+                    ),
+                  ),
+
+                  // ── STATS ROW ────────────────────────────────────────────
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: StatsRow(
+                        streakWeeks: streakWeeks,
+                        xp: xp,
+                        volumeTonnes: volumeTonnes,
+                      )
+                          .animate()
+                          .fadeIn(delay: 200.ms, duration: 400.ms),
+                    ),
+                  ),
+
+                  // ── EXERCISES ────────────────────────────────────────────
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: SectionHeader(
+                        'Today\'s Exercises',
+                        subtitle: '${sessionExercises.length} movements',
+                      ),
+                    ),
+                  ),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.xxl),
@@ -268,84 +330,81 @@ class TodayScreen extends HookConsumerWidget {
                     ),
                   ),
 
-                  // PR to Beat Card
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.lg,
-                      AppSpacing.xxl,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: prExerciseName != null
-                          ? PrToBeatCard(
-                              exerciseName: prExerciseName,
-                              currentPrKg: prCurrentKg,
-                              targetKg: prTargetKg,
-                            )
-                          : const PrToBeatCard.empty(),
-                    ),
-                  ),
-
-                  // Recovery Heatmap
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.md,
-                      AppSpacing.xxl,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: RecoveryHeatmapCard(
-                        statuses: recoveryStatuses,
-                        summaryText: recoverySummary,
+                  // ── PR TO BEAT ───────────────────────────────────────────
+                  if (prExerciseName != null)
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: PrToBeatCard(
+                          exerciseName: prExerciseName,
+                          currentPrKg: prCurrentKg,
+                          targetKg: prTargetKg,
+                        )
+                            .animate()
+                            .fadeIn(delay: 300.ms, duration: 400.ms),
                       ),
                     ),
-                  ),
 
-                  // Nutrition: Protein Target
+                  // ── RECOVERY HEATMAP ─────────────────────────────────────
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.md,
-                      AppSpacing.xxl,
-                      0,
-                    ),
+                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
                     sliver: SliverToBoxAdapter(
-                      child: ProteinTargetCard(profile: profile),
-                    ),
-                  ),
-
-                  // Nutrition: Plate Visual
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.md,
-                      AppSpacing.xxl,
-                      0,
-                    ),
-                    sliver: SliverToBoxAdapter(
-                      child: PlateVisualCard(isRestDay: adaptivePlan.isRestDay),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SectionHeader('Recovery Status',
+                              subtitle: 'Updated 2h ago'),
+                          RecoveryHeatmapCard(
+                            statuses: recoveryStatuses,
+                            summaryText: recoverySummary,
+                          ),
+                        ],
+                      ).animate().fadeIn(delay: 360.ms, duration: 400.ms),
                     ),
                   ),
 
-                  // Start button
+                  // ── NUTRITION ────────────────────────────────────────────
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xxl,
-                      AppSpacing.section,
-                      AppSpacing.xxl,
-                      AppSpacing.xxxl,
-                    ),
+                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
                     sliver: SliverToBoxAdapter(
-                      child: ForjaButton(
-                        label: 'Start Workout',
-                        onPressed: () => context.push('/workout', extra: {
-                          'exercises': sessionExercises,
-                          'dayName': plan.dayName,
-                        }),
-                      ),
+                      child: ProteinTargetCard(profile: profile)
+                          .animate()
+                          .fadeIn(delay: 420.ms, duration: 400.ms),
                     ),
+                  ),
+
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: PlateVisualCard(
+                              isRestDay: adaptivePlan.isRestDay)
+                          .animate()
+                          .fadeIn(delay: 460.ms, duration: 400.ms),
+                    ),
+                  ),
+
+                  // ── QUICK ACTIONS ─────────────────────────────────────────
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
+                    sliver: SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SectionHeader('Quick Access'),
+                          const QuickActionsRow(),
+                        ],
+                      ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
+                    ),
+                  ),
+
+                  // ── BOTTOM PADDING ────────────────────────────────────────
+                  const SliverPadding(
+                    padding: EdgeInsets.only(bottom: AppSpacing.section),
                   ),
                 ],
               ],
@@ -365,30 +424,27 @@ class TodayScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _whyBanner(String message) {
+  Widget _whyBanner(String message, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: AppColors.bgElevated,
+        color: isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(
+          color: isDark ? AppColors.border : AppColors.borderLight,
+          width: 0.5,
+        ),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            color: AppColors.textSecondary,
-            size: 16,
-          ),
+          const Icon(Icons.info_outline_rounded,
+              color: AppColors.textSecondary, size: 16),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(
-              message,
-              style: AppTextStyles.body(AppColors.textSecondary),
-            ),
+            child: Text(message, style: AppTextStyles.body(AppColors.textSecondary)),
           ),
         ],
       ),
@@ -397,7 +453,6 @@ class TodayScreen extends HookConsumerWidget {
 
   Widget _readinessBanner(ReadinessScore? readiness) {
     if (readiness == null) return const SizedBox.shrink();
-
     final Color zoneColor = switch (readiness.zone) {
       'green' => AppColors.accent,
       'yellow' => AppColors.warm,
@@ -410,14 +465,12 @@ class TodayScreen extends HookConsumerWidget {
       'red' => AppColors.coralDim,
       _ => AppColors.accentGlow,
     };
-    final Color zoneBorder = zoneColor.withValues(alpha: 0.25);
-
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: zoneBg,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: zoneBorder, width: 0.5),
+        border: Border.all(color: zoneColor.withValues(alpha: 0.25), width: 0.5),
       ),
       child: Row(
         children: [
@@ -426,7 +479,7 @@ class TodayScreen extends HookConsumerWidget {
             height: 8,
             decoration: BoxDecoration(
               color: zoneColor,
-              borderRadius: BorderRadius.circular(AppRadius.circle),
+              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
                   color: zoneColor.withValues(alpha: 0.5),
@@ -441,21 +494,15 @@ class TodayScreen extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Readiness: ${readiness.score}',
-                  style: AppTextStyles.bodyStrong(zoneColor),
-                ),
+                Text('Readiness: ${readiness.score}',
+                    style: AppTextStyles.bodyStrong(zoneColor)),
                 const SizedBox(height: 2),
-                Text(
-                  readiness.description,
-                  style: AppTextStyles.body(AppColors.textSecondary),
-                ),
-                if (readiness.sources != null && readiness.sources!.isNotEmpty) ...[
+                Text(readiness.description,
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                if (readiness.sources?.isNotEmpty == true) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    readiness.sources!,
-                    style: AppTextStyles.micro(AppColors.textSecondary),
-                  ),
+                  Text(readiness.sources!,
+                      style: AppTextStyles.micro(AppColors.textSecondary)),
                 ],
               ],
             ),
@@ -465,34 +512,15 @@ class TodayScreen extends HookConsumerWidget {
     );
   }
 
-  String _dayName(int weekday) {
-    const days = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    return days[(weekday - 1).clamp(0, 6)];
+  String _greeting(int hour) {
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
-  String _monthName(int month) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return months[(month - 1).clamp(0, 11)];
+  String _dayName(int weekday) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+        'Friday', 'Saturday', 'Sunday'];
+    return days[(weekday - 1).clamp(0, 6)];
   }
 }

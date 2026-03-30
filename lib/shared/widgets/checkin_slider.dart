@@ -45,7 +45,7 @@ class CheckInSlider extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isFilled
                           ? activeColor
-                          : AppColors.bgInput.withOpacity(0.4),
+                          : AppColors.bgInput.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
