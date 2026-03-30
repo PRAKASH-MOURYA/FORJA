@@ -18,20 +18,15 @@ class QuizScreen extends ConsumerStatefulWidget {
 class _QuizScreenState extends ConsumerState<QuizScreen> {
   int _currentQuestion = 0;
 
-  // Q1 — goal
   String? _goal;
-  // Q2 — experience
   String? _experience;
-  // Q3 — days per week
   int? _daysPerWeek;
-  // Q4 — equipment
   String? _equipment;
-  // Q5 — injuries (multi-select)
   final Set<String> _injuries = {};
-  // Q6 — height
   double? _heightCm;
-  // Q7 — weight
   double? _weightKg;
+
+  static const int _totalQuestions = 7;
 
   bool get _canAdvance {
     switch (_currentQuestion) {
@@ -44,7 +39,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       case 3:
         return _equipment != null;
       case 4:
-        return true; // injuries optional
+        return true;
       case 5:
         return _heightCm != null && _heightCm! > 0;
       case 6:
@@ -55,7 +50,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   void _next() {
-    if (_currentQuestion < 6) {
+    if (_currentQuestion < _totalQuestions - 1) {
       setState(() => _currentQuestion++);
     } else {
       _finish();
@@ -89,10 +84,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       bodyWeightKg: _weightKg,
     );
 
-    // 1. Save to Hive (always — even offline)
     await ref.read(userProfileProvider.notifier).save(profile);
 
-    // 2. Sync to Supabase (only if authenticated)
     if (authId != null) {
       await _upsertProfileToSupabase(supabase, profile);
     }
@@ -123,8 +116,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         'updated_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      // Non-fatal: profile is already saved to Hive.
-      // SyncService will retry on next connectivity event.
       debugPrint('Profile sync to Supabase failed: $e');
     }
   }
@@ -136,13 +127,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildProgressHeader(),
+            _buildPillIndicator(),
             Expanded(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 320),
                 transitionBuilder: (child, animation) {
                   final offset = Tween<Offset>(
-                    begin: const Offset(1.0, 0.0),
+                    begin: const Offset(0.08, 0.0),
                     end: Offset.zero,
                   ).animate(CurvedAnimation(
                     parent: animation,
@@ -166,7 +157,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     );
   }
 
-  Widget _buildProgressHeader() {
+  // ── Animated pill page indicator ──────────────────────────────────────────
+
+  Widget _buildPillIndicator() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xxl,
@@ -174,40 +167,234 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         AppSpacing.xxl,
         AppSpacing.md,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (_currentQuestion > 0)
-                GestureDetector(
-                  onTap: () => setState(() => _currentQuestion--),
-                  child: const Icon(Icons.arrow_back_ios,
-                      color: AppColors.textSecondary, size: 18),
-                )
-              else
-                const SizedBox(width: 18),
-              Text(
-                '${_currentQuestion + 1} of 7',
-                style: AppTextStyles.caption(AppColors.textSecondary),
+          GestureDetector(
+            onTap: _currentQuestion > 0
+                ? () => setState(() => _currentQuestion--)
+                : null,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: _currentQuestion > 0 ? 1.0 : 0.0,
+              child: const Icon(
+                Icons.arrow_back_ios,
+                color: AppColors.textSecondary,
+                size: 18,
               ),
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (_currentQuestion + 1) / 7,
-              minHeight: 3,
-              backgroundColor: AppColors.bgElevated,
-              valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_totalQuestions, (i) {
+                final isActive = i == _currentQuestion;
+                final isPast = i < _currentQuestion;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeInOut,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: isActive ? 28 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? AppColors.accent
+                        : isPast
+                            ? AppColors.accent.withValues(alpha: 0.4)
+                            : AppColors.textTertiary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 18),
+        ],
+      ),
+    );
+  }
+
+  // ── Per-page hero area ────────────────────────────────────────────────────
+
+  Widget _buildHeroArea({
+    required String emoji,
+    required String label,
+    required Color primaryColor,
+    required Color secondaryColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.xxl,
+        AppSpacing.sm,
+        AppSpacing.xxl,
+        AppSpacing.xl,
+      ),
+      height: 120,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            primaryColor.withValues(alpha: 0.12),
+            secondaryColor.withValues(alpha: 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: primaryColor.withValues(alpha: 0.18),
+          width: 1,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -16,
+            right: -16,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primaryColor.withValues(alpha: 0.06),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -12,
+            left: 12,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: secondaryColor.withValues(alpha: 0.05),
+              ),
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 42)),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
+
+  // ── Premium option card ───────────────────────────────────────────────────
+
+  Widget _buildPremiumOptionCard({
+    required String value,
+    required String label,
+    required String emoji,
+    required String desc,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color accentColor = AppColors.accent,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.accentDim : AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: isSelected
+                  ? accentColor.withValues(alpha: 0.5)
+                  : AppColors.border,
+              width: isSelected ? 1.5 : 0.5,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: accentColor.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? accentColor.withValues(alpha: 0.18)
+                      : AppColors.bgElevated,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color:
+                            isSelected ? accentColor : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      desc,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              AnimatedScale(
+                scale: isSelected ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 240),
+                curve: Curves.elasticOut,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.black, size: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Question routing ──────────────────────────────────────────────────────
 
   Widget _buildQuestion() {
     switch (_currentQuestion) {
@@ -230,95 +417,180 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     }
   }
 
+  Widget _buildSingleSelectPage({
+    required String question,
+    required String subtitle,
+    required List<(String, String, String, String)> options,
+    required String? selected,
+    required ValueChanged<String> onSelect,
+    required String heroEmoji,
+    required String heroLabel,
+    required Color heroPrimary,
+    required Color heroSecondary,
+  }) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildHeroArea(
+            emoji: heroEmoji,
+            label: heroLabel,
+            primaryColor: heroPrimary,
+            secondaryColor: heroSecondary,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(question,
+                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(subtitle,
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xl),
+                ...options.map((opt) => _buildPremiumOptionCard(
+                      value: opt.$1,
+                      label: opt.$2,
+                      emoji: opt.$3,
+                      desc: opt.$4,
+                      isSelected: selected == opt.$1,
+                      onTap: () => onSelect(opt.$1),
+                    )),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGoalQuestion() {
-    final options = [
-      ('build_muscle', 'Build Muscle', '💪', 'Hypertrophy-focused training'),
-      ('lose_fat', 'Lose Fat', '🔥', 'Burn calories and tone up'),
-      ('get_stronger', 'Get Stronger', '🏋️', 'Focus on lifts and strength'),
-      ('general', 'General Fitness', '⚡', 'Stay active and healthy'),
-    ];
     return _buildSingleSelectPage(
+      heroEmoji: '🎯',
+      heroLabel: 'YOUR GOAL',
+      heroPrimary: AppColors.accent,
+      heroSecondary: AppColors.sky,
       question: "What's your main goal?",
       subtitle: 'This shapes your entire program.',
-      options: options,
+      options: const [
+        ('build_muscle', 'Build Muscle', '💪', 'Hypertrophy-focused training'),
+        ('lose_fat', 'Lose Fat', '🔥', 'Burn calories and tone up'),
+        ('get_stronger', 'Get Stronger', '🏋️', 'Focus on lifts and strength'),
+        ('general', 'General Fitness', '⚡', 'Stay active and healthy'),
+      ],
       selected: _goal,
       onSelect: (v) => setState(() => _goal = v),
     );
   }
 
   Widget _buildExperienceQuestion() {
-    final options = [
-      ('beginner', 'Complete Beginner', '🌱', 'Less than 6 months lifting'),
-      ('some', 'Some Experience', '📈', '6 months to 2 years'),
-      ('intermediate', 'Intermediate', '🎯', '2+ years consistent training'),
-    ];
     return _buildSingleSelectPage(
+      heroEmoji: '📊',
+      heroLabel: 'EXPERIENCE',
+      heroPrimary: AppColors.warm,
+      heroSecondary: AppColors.coral,
       question: 'How experienced are you?',
       subtitle: 'Be honest — this tailors intensity.',
-      options: options,
+      options: const [
+        ('beginner', 'Complete Beginner', '🌱', 'Less than 6 months lifting'),
+        ('some', 'Some Experience', '📈', '6 months to 2 years'),
+        ('intermediate', 'Intermediate', '🎯', '2+ years consistent training'),
+      ],
       selected: _experience,
       onSelect: (v) => setState(() => _experience = v),
     );
   }
 
   Widget _buildDaysQuestion() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('How many days per week?',
-              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
-          const SizedBox(height: AppSpacing.sm),
-          Text('We\'ll build your split around this.',
-              style: AppTextStyles.body(AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxxl),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [2, 3, 4, 5, 6].map((days) {
-              final isSelected = _daysPerWeek == days;
-              return GestureDetector(
-                onTap: () => setState(() => _daysPerWeek = days),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  width: 56,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accentDim : AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(
-                      color: isSelected ? AppColors.accent : AppColors.border,
-                      width: isSelected ? 1.5 : 0.5,
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$days',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+          _buildHeroArea(
+            emoji: '📅',
+            label: 'WEEKLY SCHEDULE',
+            primaryColor: AppColors.sky,
+            secondaryColor: AppColors.accent,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('How many days per week?',
+                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text("We'll build your split around this.",
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xxxl),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [2, 3, 4, 5, 6].map((days) {
+                    final isSelected = _daysPerWeek == days;
+                    return GestureDetector(
+                      onTap: () => setState(() => _daysPerWeek = days),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        width: 56,
+                        height: 72,
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.accent
-                              : AppColors.textPrimary,
+                              ? AppColors.accentDim
+                              : AppColors.bgCard,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.accent.withValues(alpha: 0.5)
+                                : AppColors.border,
+                            width: isSelected ? 1.5 : 0.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.accent
+                                        .withValues(alpha: 0.15),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$days',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                color: isSelected
+                                    ? AppColors.accent
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'days',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isSelected
+                                    ? AppColors.accent
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      Text(
-                        'days',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isSelected
-                              ? AppColors.accent
-                              : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
         ],
       ),
@@ -326,16 +598,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   Widget _buildEquipmentQuestion() {
-    final options = [
-      ('full_gym', 'Full Gym', '🏢', 'Barbells, machines, cables'),
-      ('home_dumbbells', 'Home Dumbbells', '🏠', 'Dumbbells and bench'),
-      ('home_bodyweight', 'No Equipment', '🤸', 'Bodyweight only'),
-      ('hybrid', 'Mix of Both', '🔄', 'Gym and home combined'),
-    ];
     return _buildSingleSelectPage(
+      heroEmoji: '🏋️',
+      heroLabel: 'YOUR SETUP',
+      heroPrimary: AppColors.coral,
+      heroSecondary: AppColors.warm,
       question: 'What equipment do you have?',
       subtitle: 'Exercises will be tailored to your setup.',
-      options: options,
+      options: const [
+        ('full_gym', 'Full Gym', '🏢', 'Barbells, machines, cables'),
+        ('home_dumbbells', 'Home Dumbbells', '🏠', 'Dumbbells and bench'),
+        ('home_bodyweight', 'No Equipment', '🤸', 'Bodyweight only'),
+        ('hybrid', 'Mix of Both', '🔄', 'Gym and home combined'),
+      ],
       selected: _equipment,
       onSelect: (v) => setState(() => _equipment = v),
     );
@@ -347,207 +622,182 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       ('shoulders', 'Shoulders', '🟠'),
       ('knees', 'Knees', '🟡'),
       ('wrists', 'Wrists', '🟢'),
-      ('none', 'None', '✅'),
+      ('none', 'No Limitations', '✅'),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Any injuries or limitations?',
-              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
-          const SizedBox(height: AppSpacing.sm),
-          Text('We\'ll avoid exercises that aggravate these.',
-              style: AppTextStyles.body(AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxxl),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: options.map((opt) {
-              final key = opt.$1;
-              final label = opt.$2;
-              final emoji = opt.$3;
-              final isSelected = _injuries.contains(key);
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (key == 'none') {
-                      _injuries.clear();
-                      _injuries.add('none');
-                    } else {
-                      _injuries.remove('none');
-                      if (isSelected) {
-                        _injuries.remove(key);
-                      } else {
-                        _injuries.add(key);
-                      }
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.md,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accentDim : AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(
-                      color: isSelected ? AppColors.accent : AppColors.border,
-                      width: isSelected ? 1.5 : 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(emoji, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+          _buildHeroArea(
+            emoji: '🩺',
+            label: 'HEALTH CHECK',
+            primaryColor: AppColors.warm,
+            secondaryColor: AppColors.sky,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Any injuries or limitations?',
+                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text("We'll avoid exercises that aggravate these.",
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xxl),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: options.map((opt) {
+                    final key = opt.$1;
+                    final label = opt.$2;
+                    final emoji = opt.$3;
+                    final isSelected = _injuries.contains(key);
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (key == 'none') {
+                            _injuries.clear();
+                            _injuries.add('none');
+                          } else {
+                            _injuries.remove('none');
+                            if (isSelected) {
+                              _injuries.remove(key);
+                            } else {
+                              _injuries.add(key);
+                            }
+                          }
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.md,
+                        ),
+                        decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.accent
-                              : AppColors.textPrimary,
+                              ? AppColors.warmDim
+                              : AppColors.bgCard,
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.pill),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.warm.withValues(alpha: 0.5)
+                                : AppColors.border,
+                            width: isSelected ? 1.5 : 0.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color:
+                                        AppColors.warm.withValues(alpha: 0.15),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(emoji,
+                                style: const TextStyle(fontSize: 16)),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? AppColors.warm
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSingleSelectPage({
-    required String question,
-    required String subtitle,
-    required List<(String, String, String, String)> options,
-    required String? selected,
-    required ValueChanged<String> onSelect,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(question,
-              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
-          const SizedBox(height: AppSpacing.sm),
-          Text(subtitle, style: AppTextStyles.body(AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxxl),
-          ...options.map((opt) {
-            final value = opt.$1;
-            final label = opt.$2;
-            final emoji = opt.$3;
-            final desc = opt.$4;
-            final isSelected = selected == value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: GestureDetector(
-                onTap: () => onSelect(value),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.accentDim : AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(
-                      color: isSelected ? AppColors.accent : AppColors.border,
-                      width: isSelected ? 1.5 : 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(emoji, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: isSelected
-                                    ? AppColors.accent
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              desc,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (isSelected)
-                        const Icon(Icons.check_circle,
-                            color: AppColors.accent, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
   Widget _buildHeightQuestion() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('How tall are you?',
-              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
-          const SizedBox(height: AppSpacing.sm),
-          Text('Used to calculate protein targets and daily energy expenditure.',
-              style: AppTextStyles.body(AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxxl),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. 175',
-                    hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: AppColors.border),
+          _buildHeroArea(
+            emoji: '📏',
+            label: 'YOUR HEIGHT',
+            primaryColor: AppColors.accent,
+            secondaryColor: AppColors.warm,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('How tall are you?',
+                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                    'Used to calculate protein targets and daily energy expenditure.',
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xxxl),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        keyboardType: TextInputType.number,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accent,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. 175',
+                          hintStyle: TextStyle(
+                              color:
+                                  AppColors.textSecondary.withValues(alpha: 0.5)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide: const BorderSide(
+                                color: AppColors.accent, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.bgCard,
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            _heightCm = double.tryParse(val);
+                          });
+                        },
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: AppColors.accent, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgCard,
-                  ),
-                  onChanged: (val) {
-                    setState(() {
-                      _heightCm = double.tryParse(val);
-                    });
-                  },
+                    const SizedBox(width: AppSpacing.md),
+                    const Text('cm',
+                        style: TextStyle(
+                            fontSize: 20, color: AppColors.textSecondary)),
+                  ],
                 ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              const Text('cm', style: TextStyle(fontSize: 20, color: AppColors.textSecondary)),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -555,52 +805,80 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   Widget _buildWeightQuestion() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.xxl),
+    return SingleChildScrollView(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('What\'s your current weight?',
-              style: AppTextStyles.headingLarge(AppColors.textPrimary)),
-          const SizedBox(height: AppSpacing.sm),
-          Text('Used to generate your daily protein target (1.6g per kg).',
-              style: AppTextStyles.body(AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxxl),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. 75.5',
-                    hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: AppColors.border),
+          _buildHeroArea(
+            emoji: '⚖️',
+            label: 'YOUR WEIGHT',
+            primaryColor: AppColors.sky,
+            secondaryColor: AppColors.coral,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("What's your current weight?",
+                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                    'Used to generate your daily protein target (1.6g per kg).',
+                    style: AppTextStyles.body(AppColors.textSecondary)),
+                const SizedBox(height: AppSpacing.xxxl),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accent,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. 75.5',
+                          hintStyle: TextStyle(
+                              color:
+                                  AppColors.textSecondary.withValues(alpha: 0.5)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide: const BorderSide(
+                                color: AppColors.accent, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: AppColors.bgCard,
+                        ),
+                        onChanged: (val) {
+                          setState(() {
+                            _weightKg = double.tryParse(val);
+                          });
+                        },
+                      ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: AppColors.accent, width: 2),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.bgCard,
-                  ),
-                  onChanged: (val) {
-                    setState(() {
-                      _weightKg = double.tryParse(val);
-                    });
-                  },
+                    const SizedBox(width: AppSpacing.md),
+                    const Text('kg',
+                        style: TextStyle(
+                            fontSize: 20, color: AppColors.textSecondary)),
+                  ],
                 ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              const Text('kg', style: TextStyle(fontSize: 20, color: AppColors.textSecondary)),
-            ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  // ── Bottom bar ────────────────────────────────────────────────────────────
 
   Widget _buildBottomBar() {
     return Padding(
@@ -611,7 +889,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         AppSpacing.xxl,
       ),
       child: ForjaButton(
-        label: _currentQuestion == 6 ? 'Start Training' : 'Next',
+        label: _currentQuestion == _totalQuestions - 1
+            ? 'Start Training'
+            : 'Next',
         onPressed: _canAdvance ? _next : null,
       ),
     );
