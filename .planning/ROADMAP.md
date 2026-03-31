@@ -175,6 +175,22 @@ Plans:
 - [ ] 09-03-PLAN.md — Data tab screens: rewrite HistoryScreen, ProgressScreen, ProfileScreen + UserProfile model extension
 - [ ] 09-04-PLAN.md — Auth/Onboarding + cleanup: rewrite AuthScreen, OnboardingScreen, QuizScreen; delete dead code
 
+### Phase 10: Fixing the Split, Colours & UX Polish
+
+**Goal:** Fix split day scheduling bugs, add exercise freedom in workouts, replace readiness banner with animated hero circle, wire real data into progress screen colours, and audit all screens for light mode correctness.
+**Requirements:** No formal IDs — bug fixes + UX polish
+**Depends on:** Phase 9
+**Plans:** 7 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Split model + today provider: CustomSplit weekdayMap field, TodayPlan.isRest, weekday map resolution, pre-built plan bug fix
+- [ ] 10-02-PLAN.md — WorkoutProvider refactor: map-based exercise state, jumpToExercise, markSkipped, allResolved, app restart bug fix
+- [ ] 10-03-PLAN.md — Split Builder UI: drag-and-drop weekday calendar, weekdayMap save, light mode fix
+- [ ] 10-04-PLAN.md — Workout screen UX: exercise freedom (ExerciseJumpSheet, floating pill), dynamic sets, Add Set button, PR to beat, full-width rest timer, FinishUpScreen
+- [ ] 10-05-PLAN.md — Today screen hero: ReadinessHeroCard animated circle (800ms ease-out), StatsRow merge, zone colors
+- [ ] 10-06-PLAN.md — Progress screen real data: consistency grid green/red/neutral, volume delta arrow, strength trend slope colors
+- [ ] 10-07-PLAN.md — Light mode audit: all lib/features/ screens, replace hardcoded AppColors.bg/bgCard/textPrimary with context.app* equivalents
+
 ---
 
 ## Phase Gates
@@ -189,3 +205,4 @@ Each phase must pass before next begins:
 - **Phase 7 gate:** Streak counting works, PR card shareable, notification received
 - **Phase 8 gate:** HealthKit/Health Connect data flows to readiness score
 - **Phase 9 gate:** flutter analyze: 0 errors; all 9 screens visually match new_ui/ design; backend providers wired
+- **Phase 10 gate:** flutter analyze: 0 errors; split scheduling uses weekday map; workout flow is non-linear; readiness hero animates; all screens pass light mode visual check
