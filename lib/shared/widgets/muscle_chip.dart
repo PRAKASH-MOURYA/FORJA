@@ -30,31 +30,23 @@ class MuscleChip extends StatelessWidget {
     return MuscleChip(label: muscle, category: cat);
   }
 
-  Color get _color {
-    switch (category) {
-      case MuscleCategory.push:
-        return AppColors.coral;
-      case MuscleCategory.pull:
-        return AppColors.sky;
-      case MuscleCategory.legs:
-        return AppColors.warm;
-      case MuscleCategory.core:
-        return AppColors.accent;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppColors.bgElevated : AppColors.bgElevatedLight;
+    final border = isDark ? AppColors.border : AppColors.borderLight;
+    final text = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
+        color: bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: _color.withValues(alpha: 0.25)),
+        border: Border.all(color: border, width: 0.5),
       ),
       child: Text(
         label,
-        style: AppTextStyles.micro(_color),
+        style: AppTextStyles.micro(text),
       ),
     );
   }

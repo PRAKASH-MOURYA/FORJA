@@ -31,33 +31,16 @@ class SectionHeader extends StatelessWidget {
                 Text(
                   title,
                   style: AppTextStyles.bodyStrong(
-                    isDark
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimaryLight,
+                    isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
                   ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        subtitle!,
-                        style: AppTextStyles.caption(
-                          isDark
-                              ? AppColors.textTertiary
-                              : AppColors.textTertiaryLight,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: 20,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(1),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    subtitle!,
+                    style: AppTextStyles.caption(
+                      isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
+                    ),
                   ),
                 ],
               ],
@@ -68,7 +51,9 @@ class SectionHeader extends StatelessWidget {
               onTap: onAction,
               child: Text(
                 actionLabel!,
-                style: AppTextStyles.caption(AppColors.accent),
+                style: AppTextStyles.caption(
+                  isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                ),
               ),
             ),
         ],

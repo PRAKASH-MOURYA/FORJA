@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 
-enum StatPillVariant { mint, amber, coral, sky }
+// Variants retained for readiness functional states only.
+// Default renders as neutral monochrome.
+enum StatPillVariant { neutral, positive, warning, danger }
 
 class StatPill extends StatefulWidget {
   final IconData icon;
@@ -14,8 +16,30 @@ class StatPill extends StatefulWidget {
     required this.icon,
     required this.value,
     required this.label,
-    this.variant = StatPillVariant.mint,
+    this.variant = StatPillVariant.neutral,
   });
+
+  // Legacy constructors — callers using amber/mint/sky/coral map to neutral
+  const StatPill.amber({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+  }) : variant = StatPillVariant.neutral;
+
+  const StatPill.mint({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+  }) : variant = StatPillVariant.neutral;
+
+  const StatPill.sky({
+    super.key,
+    required this.icon,
+    required this.value,
+    required this.label,
+  }) : variant = StatPillVariant.neutral;
 
   @override
   State<StatPill> createState() => _StatPillState();
@@ -43,35 +67,26 @@ class _StatPillState extends State<StatPill>
     super.dispose();
   }
 
-  Color get _color {
+  Color _dotColor(bool isDark) {
     switch (widget.variant) {
-      case StatPillVariant.mint:
-        return AppColors.accent;
-      case StatPillVariant.amber:
-        return AppColors.warm;
-      case StatPillVariant.coral:
-        return AppColors.coral;
-      case StatPillVariant.sky:
-        return AppColors.sky;
-    }
-  }
-
-  Gradient get _gradient {
-    switch (widget.variant) {
-      case StatPillVariant.mint:
-        return AppColors.accentGradient;
-      case StatPillVariant.amber:
-        return AppColors.warmGradient;
-      case StatPillVariant.coral:
-        return AppColors.coralGradient;
-      case StatPillVariant.sky:
-        return AppColors.skyGradient;
+      case StatPillVariant.positive:
+        return AppColors.positive;
+      case StatPillVariant.warning:
+        return AppColors.warning;
+      case StatPillVariant.danger:
+        return AppColors.danger;
+      case StatPillVariant.neutral:
+        return isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppColors.border : AppColors.borderLight;
+    final bgColor = isDark
+        ? AppColors.bgCard
+        : AppColors.bgCardLight;
 
     return FadeTransition(
       opacity: _fadeAnim,
@@ -81,17 +96,17 @@ class _StatPillState extends State<StatPill>
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: _color.withValues(alpha: 0.1),
+          color: bgColor,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: _color.withValues(alpha: 0.2)),
+          border: Border.all(color: borderColor, width: 0.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  _gradient.createShader(bounds),
-              child: Icon(widget.icon, color: Colors.white, size: 18),
+            Icon(
+              widget.icon,
+              color: _dotColor(isDark),
+              size: 18,
             ),
             const SizedBox(height: 4),
             Text(
@@ -103,9 +118,7 @@ class _StatPillState extends State<StatPill>
             Text(
               widget.label,
               style: AppTextStyles.micro(
-                isDark
-                    ? AppColors.textTertiary
-                    : AppColors.textTertiaryLight,
+                isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
               ),
             ),
           ],

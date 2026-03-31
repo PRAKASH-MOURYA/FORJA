@@ -34,21 +34,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: context.appBg,
-      body: Stack(
-        children: [
-          // Ambient header gradient
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 280,
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: AppColors.ambientGradient,
-              ),
-            ),
-          ),
-          SafeArea(
+      body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Column(
@@ -72,17 +58,19 @@ class ProfileScreen extends ConsumerWidget {
                           center: Container(
                             width: 80,
                             height: 80,
-                            decoration: const BoxDecoration(
-                              gradient: AppColors.heroGradient,
+                            decoration: BoxDecoration(
+                              color: context.appAccent,
                               shape: BoxShape.circle,
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               name.isNotEmpty ? name[0].toUpperCase() : 'A',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 32,
                                 fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                                color: context.isDark
+                                    ? AppColors.textInverse
+                                    : AppColors.textInverseLight,
                               ),
                             ),
                           ),
@@ -168,16 +156,20 @@ class ProfileScreen extends ConsumerWidget {
                               height: 54,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                gradient: earned ? AppColors.holoGradient : null,
-                                color: earned ? null : context.appBgElevated,
-                                boxShadow: earned ? AppColors.mintGlow : null,
+                                color: earned
+                                    ? context.appAccent
+                                    : context.appBgElevated,
                               ),
                               alignment: Alignment.center,
                               child: Text(
                                 badge['icon'] as String,
                                 style: TextStyle(
                                   fontSize: 22,
-                                  color: earned ? null : Colors.transparent,
+                                  color: earned
+                                      ? (context.isDark
+                                          ? AppColors.textInverse
+                                          : AppColors.textInverseLight)
+                                      : Colors.transparent,
                                 ),
                               ),
                             ),
@@ -206,11 +198,9 @@ class ProfileScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
-                      color: context.appAccentGlow,
+                      color: context.appBgCard,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
-                      border: Border.all(
-                          color: context.appBorderAccent, width: 0.5),
-                      boxShadow: AppColors.accentShadow,
+                      border: Border.all(color: context.appBorder, width: 0.5),
                     ),
                     child: Row(
                       children: [
@@ -254,7 +244,7 @@ class ProfileScreen extends ConsumerWidget {
                     shadows: AppColors.subtleShadow,
                     child: Row(
                       children: [
-                        const Icon(Icons.groups_rounded, color: AppColors.accent),
+                        Icon(Icons.groups_rounded, color: context.appTextSecondary),
                         const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
@@ -376,8 +366,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ],
-      ),
     );
   }
 

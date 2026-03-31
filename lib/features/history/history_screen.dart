@@ -15,7 +15,7 @@ class HistoryScreen extends ConsumerWidget {
     final state = ref.watch(historyProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

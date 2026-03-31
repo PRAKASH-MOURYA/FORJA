@@ -40,11 +40,17 @@ class _ForjaButtonState extends State<ForjaButton> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor =
-        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
     final isDisabled = widget.onPressed == null && !widget.isLoading;
 
+    // Primary: solid accent fill (white dark / black light)
     if (widget.variant == ForjaButtonVariant.primary) {
+      final bg = isDisabled
+          ? (isDark ? AppColors.bgElevated : AppColors.bgElevatedLight)
+          : (isDark ? AppColors.accent : AppColors.accentLight);
+      final fg = isDisabled
+          ? (isDark ? AppColors.textTertiary : AppColors.textTertiaryLight)
+          : (isDark ? AppColors.textInverse : AppColors.textInverseLight);
+
       return GestureDetector(
         onTapDown: (_) => setState(() => _pressed = true),
         onTapUp: (_) => setState(() => _pressed = false),
@@ -57,38 +63,33 @@ class _ForjaButtonState extends State<ForjaButton> {
           child: SizedBox(
             width: widget.width ?? double.infinity,
             height: 56,
-            child: DecoratedBox(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
               decoration: BoxDecoration(
-                gradient: isDisabled
-                    ? null
-                    : AppColors.accentGradient,
-                color: isDisabled ? AppColors.bgElevated : null,
+                color: bg,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: (!isDisabled && !_pressed)
-                    ? AppColors.accentShadow
-                    : null,
+                boxShadow: isDisabled || _pressed ? null : AppColors.subtleShadow,
               ),
               child: Center(
                 child: widget.isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.bg,
+                          color: fg,
                         ))
                     : Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (widget.icon != null) ...[
-                            Icon(widget.icon,
-                                color: AppColors.bg, size: 18),
+                            Icon(widget.icon, color: fg, size: 18),
                             const SizedBox(width: AppSpacing.sm),
                           ],
                           Text(
                             widget.label,
-                            style: const TextStyle(
-                              color: AppColors.bg,
+                            style: TextStyle(
+                              color: fg,
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.2,
@@ -103,7 +104,8 @@ class _ForjaButtonState extends State<ForjaButton> {
       );
     }
 
-    // Secondary
+    // Secondary: transparent with hairline border
+    final textColor = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
@@ -120,13 +122,11 @@ class _ForjaButtonState extends State<ForjaButton> {
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
               color: _pressed
-                  ? AppColors.bgElevated
+                  ? (isDark ? AppColors.bgElevated : AppColors.bgElevatedLight)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: _pressed
-                    ? AppColors.borderHover
-                    : (isDark ? AppColors.border : AppColors.borderLight),
+                color: isDark ? AppColors.border : AppColors.borderLight,
                 width: 1.0,
               ),
             ),

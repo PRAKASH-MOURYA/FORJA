@@ -14,7 +14,6 @@ class QuickActionsRow extends StatelessWidget {
           child: _QuickCard(
             icon: Icons.fitness_center_rounded,
             label: 'Exercise\nLibrary',
-            gradient: AppColors.skyGradient,
             onTap: () => context.push('/exercises'),
           ),
         ),
@@ -23,7 +22,6 @@ class QuickActionsRow extends StatelessWidget {
           child: _QuickCard(
             icon: Icons.grid_view_rounded,
             label: 'My\nSplits',
-            gradient: AppColors.warmGradient,
             onTap: () => context.push('/split-builder'),
           ),
         ),
@@ -35,13 +33,11 @@ class QuickActionsRow extends StatelessWidget {
 class _QuickCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Gradient gradient;
   final VoidCallback onTap;
 
   const _QuickCard({
     required this.icon,
     required this.label,
-    required this.gradient,
     required this.onTap,
   });
 
@@ -59,9 +55,10 @@ class _QuickCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            ShaderMask(
-              shaderCallback: (bounds) => gradient.createShader(bounds),
-              child: Icon(icon, color: Colors.white, size: 28),
+            Icon(
+              icon,
+              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              size: 28,
             ),
             Text(
               label,

@@ -19,7 +19,6 @@ import 'widgets/pr_to_beat_card.dart';
 import 'widgets/recovery_heatmap_card.dart';
 import 'widgets/connect_health_nudge_card.dart';
 import '../../shared/providers/wearable_provider.dart';
-import 'widgets/plate_visual_card.dart';
 import 'widgets/protein_target_card.dart';
 import 'widgets/hero_workout_card.dart';
 import 'widgets/stats_row.dart';
@@ -45,10 +44,10 @@ class TodayScreen extends HookConsumerWidget {
     final greeting = _greeting(now.hour);
 
     if (adaptivePlan == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.bg,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
+      return Scaffold(
+        backgroundColor: context.appBg,
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.textSecondary),
         ),
       );
     }
@@ -103,314 +102,248 @@ class TodayScreen extends HookConsumerWidget {
     final xp = profile?.xp ?? 0;
     final volumeTonnes = adaptivePlan.volumeKgThisWeek / 1000;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
-      body: Stack(
-        children: [
-          // Ambient gradient overlay
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 340,
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: AppColors.ambientGradient,
+      backgroundColor: context.appBg,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xxl,
+                AppSpacing.xl,
+                AppSpacing.xxl,
+                0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── HEADER ───────────────────────────────────────────────
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                dayOfWeek,
+                                style: AppTextStyles.labelUppercase(
+                                    context.appTextTertiary),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$greeting, ${profileName?.split(' ').first ?? 'Athlete'}',
+                                style: AppTextStyles.headingLarge(
+                                    context.appTextPrimary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        // Avatar
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: context.appAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            profileName?.isNotEmpty == true
+                                ? profileName![0].toUpperCase()
+                                : 'A',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: context.isDark
+                                  ? AppColors.textInverse
+                                  : AppColors.textInverseLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                        .animate()
+                        .fadeIn(duration: 400.ms)
+                        .slideY(begin: -0.05, end: 0, duration: 400.ms),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // ── READINESS BANNER ─────────────────────────────────────
+                    if (permissionDenied && !nudgeDismissed.value) ...[
+                      ConnectHealthNudgeCard(
+                        onDismiss: () => nudgeDismissed.value = true,
+                      ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+
+                    _readinessBanner(context, readiness)
+                        .animate()
+                        .fadeIn(delay: 100.ms, duration: 400.ms),
+
+                    if (adaptivePlan.whyMessage != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _whyBanner(context, adaptivePlan.whyMessage!),
+                    ],
+
+                    if (readiness != null ||
+                        (permissionDenied && !nudgeDismissed.value) ||
+                        adaptivePlan.whyMessage != null)
+                      const SizedBox(height: AppSpacing.xl),
+                  ],
+                ),
               ),
             ),
-          ),
-          SafeArea(
-            child: CustomScrollView(
-              slivers: [
+
+            if (adaptivePlan.isRestDay)
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                sliver: SliverToBoxAdapter(
+                  child: RestDayContent(
+                    workoutsThisWeek: adaptivePlan.workoutsThisWeek,
+                    setsThisWeek: adaptivePlan.setsThisWeek,
+                    volumeKgThisWeek: adaptivePlan.volumeKgThisWeek,
+                  ),
+                ),
+              )
+            else ...[
+              // ── HERO WORKOUT CARD ──────────────────────────────────────────
+              SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                sliver: SliverToBoxAdapter(
+                  child: HeroWorkoutCard(
+                    dayName: plan.dayName,
+                    exercises: sessionExercises,
+                    onStart: () => context.push('/workout', extra: {
+                      'exercises': sessionExercises,
+                      'dayName': plan.dayName,
+                    }),
+                  )
+                      .animate()
+                      .fadeIn(delay: 120.ms, duration: 450.ms)
+                      .slideY(
+                          begin: 0.06,
+                          end: 0,
+                          delay: 120.ms,
+                          duration: 450.ms,
+                          curve: Curves.easeOutCubic),
+                ),
+              ),
+
+              // ── STATS ROW ──────────────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
+                sliver: SliverToBoxAdapter(
+                  child: StatsRow(
+                    streakWeeks: streakWeeks,
+                    xp: xp,
+                    volumeTonnes: volumeTonnes,
+                  ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
+                ),
+              ),
+
+              // ── EXERCISES ──────────────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
+                sliver: SliverToBoxAdapter(
+                  child: SectionHeader(
+                    'Today\'s Exercises',
+                    subtitle: '${sessionExercises.length} movements',
+                  ),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xxl),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final exercise = sessionExercises[index];
+                      return ExerciseRow(
+                        exercise: exercise,
+                        index: index,
+                        onTap: () => _showDemoSheet(context, exercise),
+                        prSubtitle: prSubtitles[exercise.id],
+                        lastSessionSubtitle:
+                            lastSessionSubtitles[exercise.id],
+                      );
+                    },
+                    childCount: sessionExercises.length,
+                  ),
+                ),
+              ),
+
+              // ── PR TO BEAT ─────────────────────────────────────────────────
+              if (prExerciseName != null)
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.xxl,
-                    AppSpacing.xl,
-                    AppSpacing.xxl,
-                    0,
-                  ),
+                      AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
                   sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── HERO HEADER ──────────────────────────────────────
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    dayOfWeek,
-                                    style: AppTextStyles.labelUppercase(
-                                      isDark
-                                          ? AppColors.textTertiary
-                                          : AppColors.textTertiaryLight,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '$greeting, ${profileName?.split(' ').first ?? 'Athlete'}',
-                                    style: AppTextStyles.headingLarge(
-                                      isDark
-                                          ? AppColors.textPrimary
-                                          : AppColors.textPrimaryLight,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            // Notification bell
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.bgCard
-                                    : AppColors.bgCardLight,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.lg),
-                                border: Border.all(
-                                  color: isDark
-                                      ? AppColors.border
-                                      : AppColors.borderLight,
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.notifications_none_rounded,
-                                color: isDark
-                                    ? AppColors.textSecondary
-                                    : AppColors.textSecondaryLight,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            // Avatar
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: AppColors.heroGradient,
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.circle),
-                                boxShadow: AppColors.accentShadow,
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                profileName?.isNotEmpty == true
-                                    ? profileName![0].toUpperCase()
-                                    : 'A',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.bg,
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                            .animate()
-                            .fadeIn(duration: 400.ms)
-                            .slideY(begin: -0.05, end: 0, duration: 400.ms),
-
-                        const SizedBox(height: AppSpacing.xl),
-
-                        // ── READINESS BANNER ─────────────────────────────────
-                        if (permissionDenied && !nudgeDismissed.value) ...[
-                          ConnectHealthNudgeCard(
-                            onDismiss: () => nudgeDismissed.value = true,
-                          ).animate().fadeIn(delay: 80.ms, duration: 400.ms),
-                          const SizedBox(height: AppSpacing.sm),
-                        ],
-
-                        _readinessBanner(readiness)
-                            .animate()
-                            .fadeIn(delay: 100.ms, duration: 400.ms),
-
-                        if (adaptivePlan.whyMessage != null) ...[
-                          const SizedBox(height: AppSpacing.sm),
-                          _whyBanner(adaptivePlan.whyMessage!, isDark),
-                        ],
-
-                        if (readiness != null ||
-                            (permissionDenied && !nudgeDismissed.value) ||
-                            adaptivePlan.whyMessage != null)
-                          const SizedBox(height: AppSpacing.xl),
-                      ],
-                    ),
+                    child: PrToBeatCard(
+                      exerciseName: prExerciseName,
+                      currentPrKg: prCurrentKg,
+                      targetKg: prTargetKg,
+                    ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
                   ),
                 ),
 
-                if (adaptivePlan.isRestDay)
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xxl),
-                    sliver: SliverToBoxAdapter(
-                      child: RestDayContent(
-                        workoutsThisWeek: adaptivePlan.workoutsThisWeek,
-                        setsThisWeek: adaptivePlan.setsThisWeek,
-                        volumeKgThisWeek: adaptivePlan.volumeKgThisWeek,
+              // ── RECOVERY HEATMAP ───────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader('Recovery Status',
+                          subtitle: 'Updated 2h ago'),
+                      RecoveryHeatmapCard(
+                        statuses: recoveryStatuses,
+                        summaryText: recoverySummary,
                       ),
-                    ),
-                  )
-                else ...[
-                  // ── HERO WORKOUT CARD ────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xxl),
-                    sliver: SliverToBoxAdapter(
-                      child: HeroWorkoutCard(
-                        dayName: plan.dayName,
-                        exercises: sessionExercises,
-                        onStart: () => context.push('/workout', extra: {
-                          'exercises': sessionExercises,
-                          'dayName': plan.dayName,
-                        }),
-                      )
-                          .animate()
-                          .fadeIn(delay: 120.ms, duration: 450.ms)
-                          .slideY(
-                              begin: 0.06,
-                              end: 0,
-                              delay: 120.ms,
-                              duration: 450.ms,
-                              curve: Curves.easeOutCubic),
-                    ),
-                  ),
+                    ],
+                  ).animate().fadeIn(delay: 360.ms, duration: 400.ms),
+                ),
+              ),
 
-                  // ── STATS ROW ────────────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: StatsRow(
-                        streakWeeks: streakWeeks,
-                        xp: xp,
-                        volumeTonnes: volumeTonnes,
-                      )
-                          .animate()
-                          .fadeIn(delay: 200.ms, duration: 400.ms),
-                    ),
-                  ),
+              // ── NUTRITION ──────────────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
+                sliver: SliverToBoxAdapter(
+                  child: ProteinTargetCard(profile: profile)
+                      .animate()
+                      .fadeIn(delay: 420.ms, duration: 400.ms),
+                ),
+              ),
 
-                  // ── EXERCISES ────────────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: SectionHeader(
-                        'Today\'s Exercises',
-                        subtitle: '${sessionExercises.length} movements',
-                      ),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xxl),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final exercise = sessionExercises[index];
-                          return ExerciseRow(
-                            exercise: exercise,
-                            index: index,
-                            onTap: () => _showDemoSheet(context, exercise),
-                            prSubtitle: prSubtitles[exercise.id],
-                            lastSessionSubtitle:
-                                lastSessionSubtitles[exercise.id],
-                          );
-                        },
-                        childCount: sessionExercises.length,
-                      ),
-                    ),
-                  ),
+              // ── QUICK ACTIONS ──────────────────────────────────────────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
+                sliver: SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader('Quick Access'),
+                      const QuickActionsRow(),
+                    ],
+                  ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
+                ),
+              ),
 
-                  // ── PR TO BEAT ───────────────────────────────────────────
-                  if (prExerciseName != null)
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.xxl, AppSpacing.lg, AppSpacing.xxl, 0),
-                      sliver: SliverToBoxAdapter(
-                        child: PrToBeatCard(
-                          exerciseName: prExerciseName,
-                          currentPrKg: prCurrentKg,
-                          targetKg: prTargetKg,
-                        )
-                            .animate()
-                            .fadeIn(delay: 300.ms, duration: 400.ms),
-                      ),
-                    ),
-
-                  // ── RECOVERY HEATMAP ─────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SectionHeader('Recovery Status',
-                              subtitle: 'Updated 2h ago'),
-                          RecoveryHeatmapCard(
-                            statuses: recoveryStatuses,
-                            summaryText: recoverySummary,
-                          ),
-                        ],
-                      ).animate().fadeIn(delay: 360.ms, duration: 400.ms),
-                    ),
-                  ),
-
-                  // ── NUTRITION ────────────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: ProteinTargetCard(profile: profile)
-                          .animate()
-                          .fadeIn(delay: 420.ms, duration: 400.ms),
-                    ),
-                  ),
-
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.md, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: PlateVisualCard(
-                              isRestDay: adaptivePlan.isRestDay)
-                          .animate()
-                          .fadeIn(delay: 460.ms, duration: 400.ms),
-                    ),
-                  ),
-
-                  // ── QUICK ACTIONS ─────────────────────────────────────────
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, 0),
-                    sliver: SliverToBoxAdapter(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SectionHeader('Quick Access'),
-                          const QuickActionsRow(),
-                        ],
-                      ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
-                    ),
-                  ),
-
-                  // ── BOTTOM PADDING ────────────────────────────────────────
-                  const SliverPadding(
-                    padding: EdgeInsets.only(bottom: AppSpacing.section),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+              const SliverPadding(
+                padding: EdgeInsets.only(bottom: AppSpacing.section),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -424,53 +357,47 @@ class TodayScreen extends HookConsumerWidget {
     );
   }
 
-  Widget _whyBanner(String message, bool isDark) {
+  Widget _whyBanner(BuildContext context, String message) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+        color: context.appBgElevated,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: isDark ? AppColors.border : AppColors.borderLight,
-          width: 0.5,
-        ),
+        border: Border.all(color: context.appBorder, width: 0.5),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
-              color: AppColors.textSecondary, size: 16),
+          Icon(Icons.info_outline_rounded,
+              color: context.appTextTertiary, size: 16),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(message, style: AppTextStyles.body(AppColors.textSecondary)),
+            child: Text(message,
+                style: AppTextStyles.body(context.appTextSecondary)),
           ),
         ],
       ),
     );
   }
 
-  Widget _readinessBanner(ReadinessScore? readiness) {
+  Widget _readinessBanner(BuildContext context, ReadinessScore? readiness) {
     if (readiness == null) return const SizedBox.shrink();
-    final Color zoneColor = switch (readiness.zone) {
-      'green' => AppColors.accent,
-      'yellow' => AppColors.warm,
-      'red' => AppColors.coral,
-      _ => AppColors.accent,
+
+    final Color dotColor = switch (readiness.zone) {
+      'green' => AppColors.positive,
+      'yellow' => AppColors.warning,
+      'red' => AppColors.danger,
+      _ => AppColors.positive,
     };
-    final Color zoneBg = switch (readiness.zone) {
-      'green' => AppColors.accentGlow,
-      'yellow' => AppColors.warmDim,
-      'red' => AppColors.coralDim,
-      _ => AppColors.accentGlow,
-    };
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: zoneBg,
+        color: context.appBgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: zoneColor.withValues(alpha: 0.25), width: 0.5),
+        border: Border.all(color: context.appBorder, width: 0.5),
       ),
       child: Row(
         children: [
@@ -478,15 +405,8 @@ class TodayScreen extends HookConsumerWidget {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: zoneColor,
+              color: dotColor,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: zoneColor.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -495,14 +415,14 @@ class TodayScreen extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Readiness: ${readiness.score}',
-                    style: AppTextStyles.bodyStrong(zoneColor)),
+                    style: AppTextStyles.bodyStrong(context.appTextPrimary)),
                 const SizedBox(height: 2),
                 Text(readiness.description,
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 if (readiness.sources?.isNotEmpty == true) ...[
                   const SizedBox(height: 4),
                   Text(readiness.sources!,
-                      style: AppTextStyles.micro(AppColors.textSecondary)),
+                      style: AppTextStyles.micro(context.appTextTertiary)),
                 ],
               ],
             ),
@@ -519,8 +439,10 @@ class TodayScreen extends HookConsumerWidget {
   }
 
   String _dayName(int weekday) {
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday', 'Sunday'];
+    const days = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday'
+    ];
     return days[(weekday - 1).clamp(0, 6)];
   }
 }

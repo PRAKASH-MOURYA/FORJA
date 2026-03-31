@@ -2,87 +2,81 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  // Dark theme
-  static const bg = Color(0xFF080810);
-  static const bgCard = Color(0xFF111118);
-  static const bgElevated = Color(0xFF18181F);
-  static const bgInput = Color(0xFF1C1C26);
-  static const accent = Color(0xFF6EE7B7);
-  static const accentDim = Color(0x266EE7B7);
-  static const accentGlow = Color(0x146EE7B7);
-  static const warm = Color(0xFFF59E0B);
-  static const warmDim = Color(0x26F59E0B);
-  static const coral = Color(0xFFFB7185);
-  static const coralDim = Color(0x26FB7185);
-  static const sky = Color(0xFF38BDF8);
-  static const skyDim = Color(0x2638BDF8);
-  static const textPrimary = Color(0xFFF2F2F7);
-  static const textSecondary = Color(0xFF8E8EA0);
-  static const textTertiary = Color(0xFF48485C);
-  static const border = Color(0x12FFFFFF);
-  static const borderHover = Color(0x22FFFFFF);
-  static const borderAccent = Color(0x336EE7B7);
+  // ── Dark theme ──────────────────────────────────────────────────────────────
+  static const bg = Color(0xFF0A0A0A);
+  static const bgCard = Color(0xFF111111);
+  static const bgElevated = Color(0xFF1A1A1A);
+  static const bgInput = Color(0xFF222222);
+  static const bgOverlay = Color(0xFF2A2A2A);
 
-  // Light theme
-  static const bgLight = Color(0xFFF8F8FC);
-  static const bgCardLight = Color(0xFFFFFFFF);
-  static const bgElevatedLight = Color(0xFFF0F0F6);
-  static const bgInputLight = Color(0xFFEEEEF4);
-  static const accentLight = Color(0xFF059669);
-  static const accentDimLight = Color(0x1A059669);
-  static const warmLight = Color(0xFFD97706);
-  static const coralLight = Color(0xFFE11D48);
-  static const skyLight = Color(0xFF0284C7);
-  static const textPrimaryLight = Color(0xFF0A0A0F);
-  static const textSecondaryLight = Color(0xFF6B6B80);
-  static const textTertiaryLight = Color(0xFF9999AD);
-  static const borderLight = Color(0x0F000000);
+  // Accent = pure white in dark mode (maximum contrast, zero colour)
+  static const accent = Color(0xFFFFFFFF);
+  static const accentDim = Color(0x14FFFFFF);    // 8% white
+  static const accentMuted = Color(0x80FFFFFF);  // 50% white
 
-  static const accentGradient = LinearGradient(
-    colors: [Color(0xFF6EE7B7), Color(0xFF34D399)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  // Functional-only colours — workout UI, readiness, charts
+  static const positive = Color(0xFF22C55E);
+  static const positiveD = Color(0x1A22C55E);
+  static const warning = Color(0xFFEAB308);
+  static const warningDim = Color(0x1AEAB308);
+  static const danger = Color(0xFFEF4444);
+  static const dangerDim = Color(0x1AEF4444);
 
-  static const heroGradient = LinearGradient(
-    colors: [Color(0xFF6EE7B7), Color(0xFF3B82F6)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
+  // Legacy functional aliases — kept for workout/history/progress screens
+  static const warm = Color(0xFFEAB308);
+  static const warmDim = Color(0x1AEAB308);
+  static const coral = Color(0xFFEF4444);
+  static const coralDim = Color(0x1AEF4444);
+  static const sky = Color(0xFF60A5FA);
+  static const skyDim = Color(0x1A60A5FA);
+  static const success = Color(0xFF22C55E);
+  static const successDim = Color(0x1A22C55E);
 
-  static const ambientGradient = LinearGradient(
-    colors: [Color(0x0D6EE7B7), Color(0x003B82F6)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-  );
+  // Legacy dim aliases
+  static const accentBright = Color(0xFFFFFFFF);
+  static const accentText = Color(0xFFB0B0B0);
+  static const borderHover = Color(0x29FFFFFF);
 
-  static final accentShadow = [
-    BoxShadow(
-      color: accent.withValues(alpha: 0.28),
-      blurRadius: 24,
-      spreadRadius: 0,
-      offset: const Offset(0, 6),
-    ),
-  ];
+  // Text
+  static const textPrimary = Color(0xFFF5F5F5);
+  static const textSecondary = Color(0xFF808080);
+  static const textTertiary = Color(0xFF404040);
+  static const textDisabled = Color(0xFF2A2A2A);
+  static const textInverse = Color(0xFF0A0A0A);
 
-  static final warmShadow = [
-    BoxShadow(
-      color: warm.withValues(alpha: 0.3),
-      blurRadius: 12,
-      spreadRadius: 0,
-      offset: const Offset(0, 3),
-    ),
-  ];
+  // Borders — hairline only
+  static const border = Color(0x14FFFFFF);        // 8%
+  static const borderStrong = Color(0x29FFFFFF);  // 16%
+  static const borderSubtle = Color(0x0AFFFFFF);  // 4%
+  static const borderAccent = borderStrong;       // legacy alias
 
+  // ── Light theme ─────────────────────────────────────────────────────────────
+  static const bgLight = Color(0xFFFFFFFF);
+  static const bgCardLight = Color(0xFFFAFAFA);
+  static const bgElevatedLight = Color(0xFFF2F2F2);
+  static const bgInputLight = Color(0xFFEBEBEB);
+
+  static const accentLight = Color(0xFF0A0A0A);
+  static const accentDimLight = Color(0x0F0A0A0A);
+
+  static const textPrimaryLight = Color(0xFF0A0A0A);
+  static const textSecondaryLight = Color(0xFF6B6B6B);
+  static const textTertiaryLight = Color(0xFFADADAD);
+  static const textInverseLight = Color(0xFFF5F5F5);
+
+  static const borderLight = Color(0x140A0A0A);        // 8%
+  static const borderStrongLight = Color(0x290A0A0A);  // 16%
+
+  // ── Shadows (monochrome) ────────────────────────────────────────────────────
   static final cardShadow = [
     BoxShadow(
-      color: const Color(0xFF000000).withValues(alpha: 0.28),
-      blurRadius: 20,
+      color: const Color(0xFF000000).withValues(alpha: 0.24),
+      blurRadius: 16,
       spreadRadius: 0,
-      offset: const Offset(0, 6),
+      offset: const Offset(0, 4),
     ),
     BoxShadow(
-      color: const Color(0xFF000000).withValues(alpha: 0.12),
+      color: const Color(0xFF000000).withValues(alpha: 0.10),
       blurRadius: 4,
       spreadRadius: 0,
       offset: const Offset(0, 1),
@@ -91,98 +85,72 @@ class AppColors {
 
   static final subtleShadow = [
     BoxShadow(
-      color: const Color(0xFF000000).withValues(alpha: 0.16),
-      blurRadius: 10,
-      spreadRadius: 0,
-      offset: const Offset(0, 3),
-    ),
-  ];
-
-  // New gradient tokens
-  static const splitGradient = LinearGradient(
-    colors: [Color(0xFF6EE7B7), Color(0xFF38BDF8)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const fireGradient = LinearGradient(
-    colors: [Color(0xFFF59E0B), Color(0xFFFB7185)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const holoGradient = SweepGradient(
-    colors: [
-      Color(0xFF6EE7B7),
-      Color(0xFF38BDF8),
-      Color(0xFFFB7185),
-      Color(0xFFF59E0B),
-      Color(0xFF6EE7B7),
-    ],
-    center: Alignment.center,
-  );
-
-  static const coralGradient = LinearGradient(
-    colors: [Color(0xFFFB7185), Color(0xFFF43F5E)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const skyGradient = LinearGradient(
-    colors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static const warmGradient = LinearGradient(
-    colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  // New glow tokens
-  static final mintGlow = [
-    BoxShadow(
-      color: const Color(0xFF6EE7B7).withValues(alpha: 0.45),
-      blurRadius: 32,
-      spreadRadius: 0,
-      offset: const Offset(0, 8),
-    ),
-    BoxShadow(
-      color: const Color(0xFF6EE7B7).withValues(alpha: 0.2),
+      color: const Color(0xFF000000).withValues(alpha: 0.14),
       blurRadius: 8,
       spreadRadius: 0,
       offset: const Offset(0, 2),
     ),
   ];
 
-  static final fireGlow = [
-    BoxShadow(
-      color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
-      blurRadius: 24,
-      spreadRadius: 0,
-      offset: const Offset(0, 6),
-    ),
-  ];
+  static final accentShadow = subtleShadow; // alias kept for compat
 
-  static final cardGlow = [
-    BoxShadow(
-      color: const Color(0xFF6EE7B7).withValues(alpha: 0.12),
-      blurRadius: 20,
-      spreadRadius: 0,
-      offset: const Offset(0, 4),
-    ),
-    BoxShadow(
-      color: const Color(0xFF000000).withValues(alpha: 0.28),
-      blurRadius: 20,
-      spreadRadius: 0,
-      offset: const Offset(0, 6),
-    ),
-  ];
+  // Legacy glow aliases — kept for workout completion/progress screens
+  static final indigoGlow = subtleShadow;
+  static final fireGlow = subtleShadow;
+  static final cardGlow = cardShadow;
+  static final warmShadow = subtleShadow;
+
+  // ── Gradients (monochrome in B&W system) ────────────────────────────────────
+  static const subtleGradient = LinearGradient(
+    colors: [Color(0x0AFFFFFF), Colors.transparent],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  // Legacy gradient aliases — neutral in new B&W system, kept for compat
+  static const accentGradient = LinearGradient(
+    colors: [Color(0xFFFFFFFF), Color(0xFFCCCCCC)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const heroGradient = LinearGradient(
+    colors: [Color(0xFFFFFFFF), Color(0xFF888888)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const ambientGradient = LinearGradient(
+    colors: [Color(0x05FFFFFF), Colors.transparent],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+  static const warmGradient = LinearGradient(
+    colors: [Color(0xFFEAB308), Color(0xFFD97706)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const skyGradient = LinearGradient(
+    colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const coralGradient = LinearGradient(
+    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const successGradient = LinearGradient(
+    colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const splitGradient = accentGradient;
+  static const fireGradient = warmGradient;
+
+  // accentGlow as a Color (used directly as container background)
+  static const accentGlow = Color(0x0AFFFFFF);
 
   // Animation tokens
   static const Curve smoothIn = Curves.easeInOutCubic;
-  static const double noiseOpacity = 0.03;
 }
 
 class AppSpacing {
@@ -300,7 +268,6 @@ class AppTextStyles {
 }
 
 /// Context extension for theme-aware colors.
-/// Use `context.appBg`, `context.appTextPrimary`, etc. in widgets.
 extension AppThemeX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
   Color get appBg => isDark ? AppColors.bg : AppColors.bgLight;
@@ -314,10 +281,16 @@ extension AppThemeX on BuildContext {
   Color get appTextTertiary =>
       isDark ? AppColors.textTertiary : AppColors.textTertiaryLight;
   Color get appBorder => isDark ? AppColors.border : AppColors.borderLight;
-  Color get appAccentGlow =>
-      isDark ? AppColors.accentGlow : AppColors.accentDimLight;
-  Color get appBorderAccent =>
-      isDark ? AppColors.borderAccent : AppColors.accentDimLight;
+  Color get appBorderStrong =>
+      isDark ? AppColors.borderStrong : AppColors.borderStrongLight;
+  Color get appAccent =>
+      isDark ? AppColors.accent : AppColors.accentLight;
+  Color get appAccentDim =>
+      isDark ? AppColors.accentDim : AppColors.accentDimLight;
+
+  // Legacy aliases kept so existing call-sites compile without changes
+  Color get appAccentGlow => appAccentDim;
+  Color get appBorderAccent => appBorderStrong;
 }
 
 ThemeData buildDarkTheme() {
@@ -326,9 +299,17 @@ ThemeData buildDarkTheme() {
     scaffoldBackgroundColor: AppColors.bg,
     colorScheme: const ColorScheme.dark(
       primary: AppColors.accent,
-      secondary: AppColors.sky,
-      error: AppColors.coral,
+      onPrimary: AppColors.textInverse,
+      primaryContainer: AppColors.accentDim,
+      secondary: AppColors.textSecondary,
+      onSecondary: AppColors.textInverse,
+      error: AppColors.danger,
+      onError: AppColors.textPrimary,
       surface: AppColors.bgCard,
+      onSurface: AppColors.textPrimary,
+      surfaceContainerHighest: AppColors.bgElevated,
+      outline: AppColors.border,
+      outlineVariant: AppColors.borderStrong,
     ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
     splashColor: Colors.transparent,
@@ -359,9 +340,17 @@ ThemeData buildLightTheme() {
     scaffoldBackgroundColor: AppColors.bgLight,
     colorScheme: const ColorScheme.light(
       primary: AppColors.accentLight,
-      secondary: AppColors.skyLight,
-      error: AppColors.coralLight,
+      onPrimary: AppColors.textInverseLight,
+      primaryContainer: AppColors.accentDimLight,
+      secondary: AppColors.textSecondaryLight,
+      onSecondary: AppColors.textInverseLight,
+      error: AppColors.danger,
+      onError: Colors.white,
       surface: AppColors.bgCardLight,
+      onSurface: AppColors.textPrimaryLight,
+      surfaceContainerHighest: AppColors.bgElevatedLight,
+      outline: AppColors.borderLight,
+      outlineVariant: AppColors.borderStrongLight,
     ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme),
     splashColor: Colors.transparent,

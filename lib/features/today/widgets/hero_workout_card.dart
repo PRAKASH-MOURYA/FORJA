@@ -27,101 +27,73 @@ class HeroWorkoutCard extends StatelessWidget {
     );
 
     return PremiumCard(
-      padding: EdgeInsets.zero,
-      boxShadow: AppColors.cardGlow,
+      padding: const EdgeInsets.all(AppSpacing.xl),
       onTap: onStart,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top gradient header strip
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.accent.withValues(alpha: 0.12),
-                  AppColors.sky.withValues(alpha: 0.06),
-                ],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.xl),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '${exercises.length} EXERCISES',
-                    style: AppTextStyles.micro(AppColors.accent),
+          // Metadata row: exercise count + muscle chips
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(
+                    color: isDark ? AppColors.border : AppColors.borderLight,
+                    width: 0.5,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: exercises
-                          .take(3)
-                          .map((e) => Padding(
-                                padding:
-                                    const EdgeInsets.only(right: AppSpacing.xs),
-                                child:
-                                    MuscleChip.fromMuscle(e.muscle),
-                              ))
-                          .toList(),
-                    ),
+                child: Text(
+                  '${exercises.length} EXERCISES',
+                  style: AppTextStyles.micro(
+                    isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: exercises
+                        .take(3)
+                        .map((e) => Padding(
+                              padding: const EdgeInsets.only(right: AppSpacing.xs),
+                              child: MuscleChip.fromMuscle(e.muscle),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ),
+            ],
           ),
 
-          // Card body
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dayName,
-                  style: AppTextStyles.display(
-                    isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Est. $estMinutes min · ${(estVolume / 1000).toStringAsFixed(1)}T total',
-                  style: AppTextStyles.caption(
-                    isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLight,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                ForjaButton(
-                  label: 'Start Workout',
-                  onPressed: onStart,
-                  icon: Icons.arrow_forward_rounded,
-                ),
-              ],
+          const SizedBox(height: AppSpacing.xl),
+
+          Text(
+            dayName,
+            style: AppTextStyles.display(
+              isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Est. $estMinutes min · ${(estVolume / 1000).toStringAsFixed(1)}T total',
+            style: AppTextStyles.caption(
+              isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+
+          ForjaButton(
+            label: 'Start Workout',
+            onPressed: onStart,
+            icon: Icons.arrow_forward_rounded,
           ),
         ],
       ),

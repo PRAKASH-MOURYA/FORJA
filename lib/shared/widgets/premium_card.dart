@@ -9,6 +9,7 @@ class PremiumCard extends StatefulWidget {
   final Color? backgroundColor;
   final double? borderRadius;
   final VoidCallback? onTap;
+  // Kept for API compatibility — ignored; border is always hairline
   final bool showGradientBorder;
 
   const PremiumCard({
@@ -55,6 +56,7 @@ class _PremiumCardState extends State<PremiumCard>
     final bg = widget.backgroundColor ??
         (isDark ? AppColors.bgCard : AppColors.bgCardLight);
     final radius = widget.borderRadius ?? AppRadius.xl;
+    final borderColor = isDark ? AppColors.border : AppColors.borderLight;
 
     return GestureDetector(
       onTapDown: widget.onTap != null ? (_) => _controller.forward() : null,
@@ -64,8 +66,7 @@ class _PremiumCardState extends State<PremiumCard>
               widget.onTap!();
             }
           : null,
-      onTapCancel:
-          widget.onTap != null ? () => _controller.reverse() : null,
+      onTapCancel: widget.onTap != null ? () => _controller.reverse() : null,
       child: AnimatedBuilder(
         animation: _scaleAnim,
         builder: (context, child) => Transform.scale(
@@ -75,31 +76,15 @@ class _PremiumCardState extends State<PremiumCard>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: AppBlur.card,
-              sigmaY: AppBlur.card,
-            ),
+            filter: ImageFilter.blur(sigmaX: AppBlur.card, sigmaY: AppBlur.card),
             child: Container(
               decoration: BoxDecoration(
                 color: bg,
                 borderRadius: BorderRadius.circular(radius),
                 boxShadow: widget.boxShadow ?? AppColors.cardShadow,
-                border: widget.showGradientBorder
-                    ? Border.all(
-                        color: isDark
-                            ? AppColors.borderAccent
-                            : AppColors.accentDimLight,
-                        width: 1.0,
-                      )
-                    : Border.all(
-                        color: isDark
-                            ? AppColors.border
-                            : AppColors.borderLight,
-                        width: 0.5,
-                      ),
+                border: Border.all(color: borderColor, width: 0.5),
               ),
-              padding: widget.padding ??
-                  const EdgeInsets.all(AppSpacing.lg),
+              padding: widget.padding ?? const EdgeInsets.all(AppSpacing.lg),
               child: widget.child,
             ),
           ),
