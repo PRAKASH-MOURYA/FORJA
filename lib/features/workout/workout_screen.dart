@@ -3,19 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme.dart';
-import '../../shared/widgets/premium_card.dart';
 import '../../shared/widgets/animated_progress_ring.dart';
 import '../../shared/widgets/section_header.dart';
 import '../../shared/providers/workout_provider.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/providers/workout_provider.dart' show prRepositoryProvider;
 import '../../shared/models/exercise.dart';
 import '../../shared/models/set_log.dart';
+import '../../shared/repositories/pr_repository.dart';
 import 'exercise_history_sheet.dart';
 import 'session_guard_sheet.dart';
 import 'widgets/exercise_hero_card.dart';
 import 'widgets/set_bubble_row.dart';
 import 'widgets/log_set_panel.dart';
 import 'widgets/rest_timer_sheet.dart';
+import 'widgets/exercise_jump_sheet.dart';
+import 'finish_up_screen.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
   final List<Exercise> exercises;
@@ -36,9 +39,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int _elapsedSeconds = 0;
   bool _workoutStarted = false;
 
-  late List<double> _setWeights;
-  late List<int> _setReps;
-  late List<bool> _setsDone;
+  // Map-based per-exercise set state
+  final Map<String, List<double>> _setWeights = {};
+  final Map<String, List<int>> _setReps = {};
+  final Map<String, List<bool>> _setsDone = {};
   bool _showRestTimer = false;
   int _lastCompletedSet = 0;
 
@@ -57,20 +61,29 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           widget.exercises,
           profile?.id ?? 'guest',
         );
-    _initSetState(0);
+    // Initialise set state for all exercises
+    final prRepo = ref.read(prRepositoryProvider);
+    for (final exercise in widget.exercises) {
+      _initSetStateForExercise(exercise, prRepo);
+    }
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsedSeconds++);
     });
   }
 
-  void _initSetState(int exerciseIndex) {
-    final exercises = ref.read(workoutProvider).exercises;
-    if (exerciseIndex >= exercises.length) return;
-    final exercise = exercises[exerciseIndex];
-    _setWeights = List.generate(exercise.sets, (_) => exercise.defaultKg);
-    _setReps = List.generate(exercise.sets, (_) => exercise.reps);
-    _setsDone = List.generate(exercise.sets, (_) => false);
-    _showRestTimer = false;
+  void _initSetStateForExercise(Exercise exercise, PrRepository prRepo) {
+    if (_setWeights.containsKey(exercise.id)) return; // already initialised
+
+    // Start with 1 set, pre-fill from last PR if available
+    final pr = prRepo.getLatestPRForExercise(exercise.id);
+    final defaultWeight =
+        pr != null ? (pr['weight_kg'] as num).toDouble() : exercise.defaultKg;
+    final defaultReps =
+        pr != null ? (pr['reps'] as num).toInt() : exercise.reps;
+
+    _setWeights[exercise.id] = [defaultWeight];
+    _setReps[exercise.id] = [defaultReps];
+    _setsDone[exercise.id] = [false];
   }
 
   @override
@@ -85,24 +98,39 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  int get _currentSetIndex => _setsDone.indexWhere((d) => !d);
-  bool get _allSetsDone => _setsDone.every((d) => d);
+  int _currentSetIndex(String exerciseId) {
+    final done = _setsDone[exerciseId] ?? [];
+    return done.indexWhere((d) => !d);
+  }
+
+  bool _allSetsDoneForExercise(String exerciseId) {
+    final done = _setsDone[exerciseId] ?? [];
+    return done.isNotEmpty && done.every((d) => d);
+  }
+
+  void _addSet(String exerciseId) {
+    setState(() {
+      _setWeights[exerciseId]!.add(_setWeights[exerciseId]!.last);
+      _setReps[exerciseId]!.add(_setReps[exerciseId]!.last);
+      _setsDone[exerciseId]!.add(false);
+    });
+  }
 
   void _logSet() {
-    final setIndex = _currentSetIndex;
-    if (setIndex < 0) return;
-
     final workoutState = ref.read(workoutProvider);
     final exercise = workoutState.currentExercise;
     if (exercise == null) return;
+
+    final setIndex = _currentSetIndex(exercise.id);
+    if (setIndex < 0) return;
 
     final setLog = SetLog(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       workoutLogId: workoutState.activeLog?.id ?? '',
       exerciseId: exercise.id,
       setNumber: setIndex + 1,
-      weightKg: _setWeights[setIndex],
-      reps: _setReps[setIndex],
+      weightKg: _setWeights[exercise.id]![setIndex],
+      reps: _setReps[exercise.id]![setIndex],
       completed: true,
       createdAt: DateTime.now(),
     );
@@ -110,12 +138,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     ref.read(workoutProvider.notifier).logSet(setLog);
 
     setState(() {
-      _setsDone[setIndex] = true;
+      _setsDone[exercise.id]![setIndex] = true;
       _lastCompletedSet = setIndex + 1;
-      _showRestTimer = !_allSetsDone;
+      _showRestTimer = !_allSetsDoneForExercise(exercise.id);
     });
 
-    if (_allSetsDone) {
+    if (_allSetsDoneForExercise(exercise.id)) {
       Future.delayed(const Duration(milliseconds: 400), () {
         if (!mounted) return;
         _advanceExercise();
@@ -125,20 +153,57 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
   void _advanceExercise() {
     final workoutState = ref.read(workoutProvider);
-    if (workoutState.isLastExercise) {
+    if (workoutState.allResolved) {
       _endWorkout();
     } else {
       ref.read(workoutProvider.notifier).nextExercise();
       setState(() {
-        _initSetState(workoutState.currentExerciseIndex + 1);
+        _showRestTimer = false;
+        final newExercise = ref.read(workoutProvider).currentExercise;
+        if (newExercise != null) {
+          _lastCompletedSet = 0;
+        }
       });
     }
   }
 
   Future<void> _endWorkout() async {
     _elapsedTimer?.cancel();
-    await ref.read(workoutProvider.notifier).completeWorkout();
-    if (mounted) context.push('/workout/complete');
+    final workoutState = ref.read(workoutProvider);
+
+    // Find incomplete exercises (0 completed sets, not skipped)
+    final incompleteExercises = workoutState.exercises.where((e) {
+      final hasCompletedSet = workoutState.completedSets
+          .any((s) => s.exerciseId == e.id && s.completed);
+      final isSkipped = workoutState.skippedExerciseIds.contains(e.id);
+      return !hasCompletedSet && !isSkipped;
+    }).toList();
+
+    if (incompleteExercises.isNotEmpty) {
+      // Push FinishUpScreen (keeps WorkoutScreen State alive)
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => FinishUpScreen(
+            incompleteExercises: incompleteExercises,
+            onAddSets: (id) {
+              ref.read(workoutProvider.notifier).jumpToExercise(id);
+              setState(() => _showRestTimer = false);
+            },
+            onSkip: (id) {
+              ref.read(workoutProvider.notifier).markSkipped(id);
+            },
+            onProceed: () async {
+              await ref.read(workoutProvider.notifier).completeWorkout();
+              if (mounted) context.go('/workout/complete');
+            },
+          ),
+        ),
+      );
+    } else {
+      await ref.read(workoutProvider.notifier).completeWorkout();
+      if (mounted) context.push('/workout/complete');
+    }
   }
 
   Future<void> _showGuard() async {
@@ -160,26 +225,60 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   Widget build(BuildContext context) {
     final workoutState = ref.watch(workoutProvider);
     final exercise = workoutState.currentExercise;
-    final exerciseIndex = workoutState.currentExerciseIndex;
+    final exerciseIndex = workoutState.exercises
+        .indexWhere((e) => e.id == workoutState.activeExerciseId);
     final totalExercises = workoutState.exercises.length;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (exercise == null) {
       return Scaffold(
-        backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
+        backgroundColor: context.appBg,
         body: const Center(
           child: CircularProgressIndicator(color: AppColors.accent),
         ),
       );
     }
 
+    final exerciseWeights = _setWeights[exercise.id] ?? [];
+    final exerciseReps = _setReps[exercise.id] ?? [];
+    final exerciseDone = _setsDone[exercise.id] ?? [];
+    final currentSet = _currentSetIndex(exercise.id);
+    final allDone = _allSetsDoneForExercise(exercise.id);
+
     final completedExercises =
         workoutState.completedSets.map((s) => s.exerciseId).toSet().length;
-    final totalSets = workoutState.exercises.fold<int>(0, (s, e) => s + e.sets);
-    final completedSets = workoutState.completedSets.where((s) => s.completed).length;
-    final overallProgress = totalExercises > 0
-        ? completedExercises / totalExercises
-        : 0.0;
+    final completedSets =
+        workoutState.completedSets.where((s) => s.completed).length;
+    final overallProgress =
+        totalExercises > 0 ? completedExercises / totalExercises : 0.0;
+
+    // Completed exercise IDs for the jump sheet
+    final completedExIds = workoutState.completedSets
+        .where((s) => s.completed)
+        .map((s) => s.exerciseId)
+        .toSet();
+
+    // PR / Last session info
+    final prRepo = ref.read(prRepositoryProvider);
+    final pr = prRepo.getLatestPRForExercise(exercise.id);
+    final progressiveTarget = prRepo.getProgressiveTarget(exercise.id);
+    String? lastSessionText;
+    String? prText;
+    if (pr != null) {
+      final weightKg = (pr['weight_kg'] as num).toDouble();
+      final reps = (pr['reps'] as num).toInt();
+      lastSessionText = 'Last: ${weightKg.toStringAsFixed(0)}kg × $reps';
+      final targetWeight =
+          (progressiveTarget['targetWeightKg'] as num).toDouble();
+      final targetReps = progressiveTarget['targetReps'] as int;
+      final increasedWeight =
+          progressiveTarget['increasedWeight'] as bool? ?? false;
+      if (increasedWeight) {
+        prText = 'Target: ${targetWeight.toStringAsFixed(1)}kg × $targetReps';
+      } else {
+        prText =
+            'Target: ${targetWeight.toStringAsFixed(0)}kg × $targetReps (add reps)';
+      }
+    }
 
     return PopScope(
       canPop: false,
@@ -187,7 +286,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         if (!didPop) await _showGuard();
       },
       child: Scaffold(
-        backgroundColor: isDark ? AppColors.bg : AppColors.bgLight,
+        backgroundColor: context.appBg,
         body: SafeArea(
           child: Column(
             children: [
@@ -205,15 +304,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+                          color: context.appBgCard,
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          border: Border.all(
-                            color: isDark ? AppColors.border : AppColors.borderLight,
-                          ),
+                          border: Border.all(color: context.appBorder),
                         ),
                         child: Icon(
                           Icons.close_rounded,
-                          color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                          color: context.appTextSecondary,
                           size: 18,
                         ),
                       ),
@@ -223,8 +320,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       child: Text(
                         widget.dayName.toUpperCase(),
                         style: AppTextStyles.labelUppercase(
-                          isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
-                        ),
+                            context.appTextTertiary),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -248,7 +344,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               // ── SCROLLABLE BODY ─────────────────────────────────────────
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -268,6 +365,27 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                         ),
                       ),
 
+                      // Last session + PR to beat
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              lastSessionText ??
+                                  'Log a workout to see your PR to beat',
+                              style:
+                                  AppTextStyles.micro(context.appTextSecondary),
+                            ),
+                          ),
+                          if (prText != null)
+                            Text(
+                              prText,
+                              style:
+                                  AppTextStyles.micro(context.appTextSecondary),
+                            ),
+                        ],
+                      ),
+
                       const SizedBox(height: AppSpacing.xl),
 
                       // ── OVERALL PROGRESS RING ─────────────────────────
@@ -281,20 +399,17 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                               Text(
                                 '$completedSets',
                                 style: AppTextStyles.dataLarge(
-                                  isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
-                                ),
+                                    context.appTextPrimary),
                               ),
                               Text(
-                                '/ $totalSets sets',
+                                '/ ${workoutState.exercises.fold<int>(0, (s, e) => s + (_setsDone[e.id]?.length ?? e.sets))} sets',
                                 style: AppTextStyles.caption(
-                                  isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
-                                ),
+                                    context.appTextSecondary),
                               ),
                               Text(
                                 'TOTAL',
                                 style: AppTextStyles.micro(
-                                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
-                                ),
+                                    context.appTextTertiary),
                               ),
                             ],
                           ),
@@ -304,51 +419,69 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       const SizedBox(height: AppSpacing.xl),
 
                       // ── SET BUBBLES ────────────────────────────────────
-                      SectionHeader('Sets'),
+                      const SectionHeader('Sets'),
                       SetBubbleRow(
-                        totalSets: exercise.sets,
-                        currentSetIndex: _currentSetIndex,
-                        setsDone: _setsDone,
+                        totalSets: exerciseDone.length,
+                        currentSetIndex: currentSet,
+                        setsDone: exerciseDone,
                       ),
 
                       const SizedBox(height: AppSpacing.xl),
 
                       // ── LOG SET PANEL ──────────────────────────────────
-                      if (!_allSetsDone)
+                      if (!allDone)
                         LogSetPanel(
                           setNumber: _lastCompletedSet + 1,
-                          weightKg: _currentSetIndex >= 0
-                              ? _setWeights[_currentSetIndex]
+                          weightKg: currentSet >= 0 &&
+                                  currentSet < exerciseWeights.length
+                              ? exerciseWeights[currentSet]
                               : exercise.defaultKg,
-                          reps: _currentSetIndex >= 0
-                              ? _setReps[_currentSetIndex]
+                          reps: currentSet >= 0 &&
+                                  currentSet < exerciseReps.length
+                              ? exerciseReps[currentSet]
                               : exercise.reps,
                           onWeightChanged: (w) {
-                            if (_currentSetIndex >= 0) {
-                              setState(() => _setWeights[_currentSetIndex] = w);
+                            if (currentSet >= 0 &&
+                                currentSet < exerciseWeights.length) {
+                              setState(() =>
+                                  _setWeights[exercise.id]![currentSet] = w);
                             }
                           },
                           onRepsChanged: (r) {
-                            if (_currentSetIndex >= 0) {
-                              setState(() => _setReps[_currentSetIndex] = r);
+                            if (currentSet >= 0 &&
+                                currentSet < exerciseReps.length) {
+                              setState(
+                                  () => _setReps[exercise.id]![currentSet] = r);
                             }
                           },
-                          onLogSet: _currentSetIndex >= 0 ? _logSet : null,
-                          isEnabled: _currentSetIndex >= 0 && !_showRestTimer,
+                          onLogSet: currentSet >= 0 ? _logSet : null,
+                          isEnabled: currentSet >= 0 && !_showRestTimer,
+                        ),
+
+                      // ── ADD SET BUTTON ──────────────────────────────────
+                      if (!allDone || exerciseDone.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md),
+                          child: TextButton.icon(
+                            onPressed: () => _addSet(exercise.id),
+                            icon: Icon(Icons.add,
+                                size: 16, color: context.appTextSecondary),
+                            label: Text(
+                              'Add Set',
+                              style:
+                                  AppTextStyles.body(context.appTextSecondary),
+                            ),
+                          ),
                         ),
 
                       // ── REST TIMER ─────────────────────────────────────
                       if (_showRestTimer) ...[
                         const SizedBox(height: AppSpacing.lg),
-                        PremiumCard(
-                          boxShadow: AppColors.fireGlow,
-                          child: RestTimerSheet(
-                            totalSeconds: 90,
-                            onComplete: () =>
-                                setState(() => _showRestTimer = false),
-                            onSkip: () =>
-                                setState(() => _showRestTimer = false),
-                          ),
+                        RestTimerSheet(
+                          totalSeconds: 90,
+                          onComplete: () =>
+                              setState(() => _showRestTimer = false),
+                          onSkip: () => setState(() => _showRestTimer = false),
                         ),
                       ],
 
@@ -361,11 +494,38 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                           TextButton(
                             onPressed: _advanceExercise,
                             child: Text(
-                              'Skip exercise',
-                              style: AppTextStyles.body(AppColors.textSecondary),
+                              'Skip',
+                              style:
+                                  AppTextStyles.body(context.appTextSecondary),
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.xl),
+                          const SizedBox(width: AppSpacing.lg),
+                          TextButton(
+                            onPressed: () => showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => ExerciseJumpSheet(
+                                exercises: workoutState.exercises,
+                                completedExerciseIds: completedExIds,
+                                onJump: (id) {
+                                  ref
+                                      .read(workoutProvider.notifier)
+                                      .jumpToExercise(id);
+                                  setState(() {
+                                    _showRestTimer = false;
+                                    _lastCompletedSet = 0;
+                                  });
+                                },
+                              ),
+                            ),
+                            child: Text(
+                              'Exercises',
+                              style:
+                                  AppTextStyles.body(context.appTextSecondary),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
                           TextButton(
                             onPressed: _endWorkout,
                             child: Row(
@@ -374,7 +534,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                                 const Icon(Icons.stop_circle_outlined,
                                     color: AppColors.coral, size: 14),
                                 const SizedBox(width: 4),
-                                Text('End workout',
+                                Text('End',
                                     style: AppTextStyles.body(AppColors.coral)),
                               ],
                             ),

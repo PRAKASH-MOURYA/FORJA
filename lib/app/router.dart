@@ -27,9 +27,9 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  // Listen to both auth and guest state to trigger redirects
-  final authState = ref.watch(authStateProvider).value;
-  final isAuthenticated = authState?.session?.user != null;
+  final authState = ref.watch(authStateProvider);
+  final authValue = authState.valueOrNull;
+  final isAuthenticated = authValue?.session?.user != null;
   final isGuest = ref.watch(isGuestProvider);
   final profile = ref.watch(userProfileProvider);
   final isOnboarded = profile?.onboardingComplete ?? false;
@@ -70,8 +70,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/auth',
-        pageBuilder: (context, state) => _fadeSlideTransition(
-          state, const AuthScreen()),
+        pageBuilder: (context, state) =>
+            _fadeSlideTransition(state, const AuthScreen()),
       ),
       GoRoute(
         path: '/onboarding',
@@ -117,8 +117,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          final exercises =
-              extra?['exercises'] as List<Exercise>? ?? const [];
+          final exercises = extra?['exercises'] as List<Exercise>? ?? const [];
           final dayName = extra?['dayName'] as String? ?? 'Workout';
           return WorkoutScreen(exercises: exercises, dayName: dayName);
         },
@@ -156,14 +155,13 @@ CustomTransitionPage<void> _fadeSlideTransition(
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       return FadeTransition(
-        opacity: CurvedAnimation(
-            parent: animation, curve: Curves.easeInOut),
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
         child: SlideTransition(
           position: Tween(
             begin: const Offset(0.04, 0),
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-              parent: animation, curve: Curves.easeOutCubic)),
+          ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
           child: child,
         ),
       );
@@ -184,7 +182,13 @@ class _ScaffoldWithBottomNavState extends ConsumerState<ScaffoldWithBottomNav> {
   int _currentIndex = 0;
   StreamSubscription<Uri>? _deepLinkSub;
 
-  static const _tabs = ['/today', '/history', '/exercises', '/progress', '/profile'];
+  static const _tabs = [
+    '/today',
+    '/history',
+    '/exercises',
+    '/progress',
+    '/profile'
+  ];
 
   @override
   void initState() {

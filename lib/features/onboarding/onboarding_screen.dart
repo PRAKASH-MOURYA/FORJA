@@ -10,7 +10,7 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       body: Stack(
         children: [
           // Ambient radial glow at bottom
@@ -71,12 +71,12 @@ class OnboardingScreen extends StatelessWidget {
                       boxShadow: AppColors.accentShadow,
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
+                    child: Text(
                       'F',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.bg,
+                        color: context.appBg,
                       ),
                     ),
                   )
@@ -115,7 +115,7 @@ class OnboardingScreen extends StatelessWidget {
                   // Headline
                   Text(
                     'Forge a stronger\nversion of yourself.',
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary),
                   )
                       .animate()
                       .fadeIn(delay: 500.ms, duration: 500.ms)
@@ -132,7 +132,7 @@ class OnboardingScreen extends StatelessWidget {
                   // Subheading
                   Text(
                     'A smart training companion that removes decision fatigue — just open the app and train.',
-                    style: AppTextStyles.body(AppColors.textSecondary),
+                    style: AppTextStyles.body(context.appTextSecondary),
                   )
                       .animate()
                       .fadeIn(delay: 650.ms, duration: 500.ms),

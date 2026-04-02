@@ -51,7 +51,8 @@ final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
 // --- Notifier ---
 
 class SyncNotifier extends StateNotifier<SyncState> {
-  SyncNotifier(this._workoutRepo, this._checkInRepo) : super(const SyncState()) {
+  SyncNotifier(this._workoutRepo, this._checkInRepo)
+      : super(const SyncState()) {
     _refreshPendingCount();
     _listenConnectivity();
   }
@@ -78,9 +79,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   Future<void> retryFailed() async {
     // Reset failed workout logs
-    final failedLogs = _workoutRepo.getAll()
-        .where((w) => w.syncStatus == 'failed')
-        .toList();
+    final failedLogs =
+        _workoutRepo.getAll().where((w) => w.syncStatus == 'failed').toList();
     for (final log in failedLogs) {
       await _workoutRepo.save(log.copyWith(syncStatus: 'pending'));
     }
@@ -94,9 +94,8 @@ class SyncNotifier extends StateNotifier<SyncState> {
     }
 
     // Reset failed check-ins
-    final failedCheckIns = _checkInRepo.getAll()
-        .where((c) => c.syncStatus == 'failed')
-        .toList();
+    final failedCheckIns =
+        _checkInRepo.getAll().where((c) => c.syncStatus == 'failed').toList();
     for (final ci in failedCheckIns) {
       await _checkInRepo.save(ci.copyWith(syncStatus: 'pending'));
     }
@@ -106,7 +105,14 @@ class SyncNotifier extends StateNotifier<SyncState> {
 
   Future<void> syncPending() async {
     if (state.isSyncing) return;
-    
+
+    // Check if Supabase is configured
+    try {
+      final _ = Supabase.instance.client;
+    } catch (_) {
+      return; // Supabase not initialized - skip sync
+    }
+
     final count = _workoutRepo.getPending().length +
         _workoutRepo.getPendingSetLogs().length +
         _checkInRepo.getPending().length;

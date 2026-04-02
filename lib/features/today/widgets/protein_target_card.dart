@@ -17,9 +17,9 @@ class ProteinTargetCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.bgElevated,
+        color: context.appBgElevated,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        border: Border.all(color: context.appBorder, width: 0.5),
       ),
       child: Row(
         children: [
@@ -29,16 +29,16 @@ class ProteinTargetCard extends StatelessWidget {
               color: AppColors.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.fitness_center, color: AppColors.accent, size: 20),
+            child:  Icon(Icons.fitness_center, color: AppColors.accent, size: 20),
           ),
-          const SizedBox(width: AppSpacing.md),
+           SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Daily Protein Target', style: AppTextStyles.bodyStrong(AppColors.textPrimary)),
+                Text('Daily Protein Target', style: AppTextStyles.bodyStrong(context.appTextPrimary)),
                 const SizedBox(height: 2),
-                Text('Based on 1.6g per kg of body weight', style: AppTextStyles.micro(AppColors.textSecondary)),
+                Text('Based on 1.6g per kg of body weight', style: AppTextStyles.micro(context.appTextSecondary)),
               ],
             ),
           ),

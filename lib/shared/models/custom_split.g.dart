@@ -22,13 +22,14 @@ class CustomSplitAdapter extends TypeAdapter<CustomSplit> {
       daysCount: fields[2] as int,
       days: (fields[3] as List).cast<SplitDay>(),
       createdAt: fields[4] as DateTime,
+      weekdayMap: fields[5] == null ? {} : (fields[5] as Map).cast<int, int>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, CustomSplit obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class CustomSplitAdapter extends TypeAdapter<CustomSplit> {
       ..writeByte(3)
       ..write(obj.days)
       ..writeByte(4)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.weekdayMap);
   }
 
   @override
@@ -102,6 +105,10 @@ _$CustomSplitImpl _$$CustomSplitImplFromJson(Map<String, dynamic> json) =>
           .map((e) => SplitDay.fromJson(e as Map<String, dynamic>))
           .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
+      weekdayMap: (json['weekdayMap'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(int.parse(k), (e as num).toInt()),
+          ) ??
+          const <int, int>{},
     );
 
 Map<String, dynamic> _$$CustomSplitImplToJson(_$CustomSplitImpl instance) =>
@@ -111,6 +118,8 @@ Map<String, dynamic> _$$CustomSplitImplToJson(_$CustomSplitImpl instance) =>
       'daysCount': instance.daysCount,
       'days': instance.days,
       'createdAt': instance.createdAt.toIso8601String(),
+      'weekdayMap':
+          instance.weekdayMap.map((k, e) => MapEntry(k.toString(), e)),
     };
 
 _$SplitDayImpl _$$SplitDayImplFromJson(Map<String, dynamic> json) =>

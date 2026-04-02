@@ -23,10 +23,10 @@ class ForjaBottomNav extends StatelessWidget {
         ),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.bgCard.withValues(alpha: 0.72),
+            color: context.appBgCard.withValues(alpha: 0.72),
             border: Border(
               top: BorderSide(
-                color: Colors.white.withValues(alpha: 0.06),
+                color: context.appBorder.withValues(alpha: 0.5),
                 width: 0.5,
               ),
             ),
@@ -140,7 +140,7 @@ class _NavItemState extends State<_NavItem>
   @override
   Widget build(BuildContext context) {
     final isActive = widget.index == widget.current;
-    final color = isActive ? AppColors.accent : AppColors.textTertiary;
+    final color = isActive ? AppColors.accent : context.appTextTertiary;
 
     return Expanded(
       child: GestureDetector(

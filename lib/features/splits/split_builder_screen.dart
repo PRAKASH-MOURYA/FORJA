@@ -26,14 +26,18 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
 
   final _splitNameController = TextEditingController();
 
+  /// 1=Mon, 2=Tue, ..., 7=Sun → dayIndex in _days
+  final Map<int, int> _weekdayMap = {};
+
+
   @override
   void initState() {
     super.initState();
     _days = List.generate(_daysCount, (i) {
       return _DayConfig(dayName: 'Day ${i + 1}', exerciseIds: []);
     });
-    _dayNameControllers =
-        List.generate(_daysCount, (i) => TextEditingController(text: _days[i].dayName));
+    _dayNameControllers = List.generate(
+        _daysCount, (i) => TextEditingController(text: _days[i].dayName));
   }
 
   @override
@@ -63,8 +67,11 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
       } else {
         final removeCount = _daysCount - count;
         for (var i = 0; i < removeCount; i++) {
+          final removedIndex = _days.length - 1;
           _dayNameControllers.removeLast().dispose();
           _days.removeLast();
+          // Remove any weekday entries pointing to the removed index
+          _weekdayMap.removeWhere((_, v) => v == removedIndex);
         }
       }
 
@@ -94,9 +101,9 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
               maxChildSize: 0.95,
               builder: (_, scrollController) {
                 return Container(
-                  decoration: const BoxDecoration(
-                    color: AppColors.bgCard,
-                    borderRadius: BorderRadius.vertical(
+                  decoration: BoxDecoration(
+                    color: context.appBgCard,
+                    borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(AppRadius.xl),
                     ),
                   ),
@@ -107,7 +114,7 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: AppColors.textTertiary,
+                          color: context.appTextTertiary,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -120,21 +127,22 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
                                 'Pick Exercises',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
+                                  color: context.appTextPrimary,
                                 ),
                               ),
                             ),
                             IconButton(
-                              onPressed: () => Navigator.of(sheetContext).pop(),
-                              icon: const Icon(
+                              onPressed: () =>
+                                  Navigator.of(sheetContext).pop(),
+                              icon: Icon(
                                 Icons.close,
-                                color: AppColors.textSecondary,
+                                color: context.appTextSecondary,
                                 size: 22,
                               ),
                               splashRadius: 20,
@@ -161,7 +169,7 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                               Text(
                                 category.toUpperCase(),
                                 style: AppTextStyles.labelUppercase(
-                                  AppColors.textSecondary,
+                                  context.appTextSecondary,
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.sm),
@@ -172,7 +180,8 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                                     exerciseData['name'] as String? ??
                                         exerciseId;
                                 final muscle =
-                                    exerciseData['muscle'] as String? ?? '';
+                                    exerciseData['muscle'] as String? ??
+                                        '';
                                 final isSelected = _days[dayIndex]
                                     .exerciseIds
                                     .contains(exerciseId);
@@ -181,7 +190,8 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                                   value: isSelected,
                                   onChanged: (checked) {
                                     setState(() {
-                                      final ids = _days[dayIndex].exerciseIds;
+                                      final ids =
+                                          _days[dayIndex].exerciseIds;
                                       if (checked == true) {
                                         ids.add(exerciseId);
                                       } else {
@@ -193,14 +203,14 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                                   title: Text(
                                     exerciseName,
                                     style: AppTextStyles.bodyStrong(
-                                      AppColors.textPrimary,
+                                      context.appTextPrimary,
                                     ),
                                   ),
                                   subtitle: muscle.isNotEmpty
                                       ? Text(
                                           muscle,
                                           style: AppTextStyles.caption(
-                                            AppColors.textSecondary,
+                                            context.appTextSecondary,
                                           ),
                                         )
                                       : null,
@@ -243,14 +253,17 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
           .map((entry) {
             final dayIndex = entry.key;
             final day = entry.value;
-            final controllerText = _dayNameControllers[dayIndex].text.trim();
+            final controllerText =
+                _dayNameControllers[dayIndex].text.trim();
             return SplitDay(
-              dayName: controllerText.isEmpty ? day.dayName : controllerText,
+              dayName:
+                  controllerText.isEmpty ? day.dayName : controllerText,
               exerciseIds: List.from(day.exerciseIds),
             );
           })
           .toList(),
       createdAt: DateTime.now(),
+      weekdayMap: _weekdayMap,
     );
 
     await HiveService.customSplits.put(split.id, split);
@@ -268,17 +281,17 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: context.appBg,
         title: Text(
           'Build Your Split',
-          style: AppTextStyles.heading(AppColors.textPrimary),
+          style: AppTextStyles.heading(context.appTextPrimary),
         ),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios,
-              color: AppColors.textSecondary, size: 18),
+          icon: Icon(Icons.arrow_back_ios,
+              color: context.appTextSecondary, size: 18),
           onPressed: () => context.pop(),
         ),
       ),
@@ -292,11 +305,11 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                 decoration: InputDecoration(
                   hintText: 'e.g. Push / Pull / Legs',
                   filled: true,
-                  fillColor: AppColors.bgElevated,
+                  fillColor: context.appBgElevated,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
-                    borderSide: const BorderSide(
-                      color: AppColors.borderHover,
+                    borderSide: BorderSide(
+                      color: context.appBorderStrong,
                       width: 0.5,
                     ),
                   ),
@@ -309,7 +322,7 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                   Text(
                     'NUMBER OF DAYS',
                     style: AppTextStyles.labelUppercase(
-                      AppColors.textSecondary,
+                      context.appTextSecondary,
                     ),
                   ),
                   const Spacer(),
@@ -331,24 +344,49 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: selected
-                            ? AppColors.accentGlow
-                            : AppColors.bgElevated,
+                            ? context.appAccentDim
+                            : context.appBgElevated,
                         borderRadius:
                             BorderRadius.circular(AppRadius.pill),
                         border: Border.all(
-                          color: selected ? AppColors.accent : AppColors.border,
+                          color: selected
+                              ? context.appAccent
+                              : context.appBorder,
                           width: selected ? 1.0 : 0.5,
                         ),
                       ),
                       child: Text(
                         '$count',
                         style: AppTextStyles.bodyStrong(
-                          selected ? AppColors.accent : AppColors.textSecondary,
+                          selected
+                              ? context.appAccent
+                              : context.appTextSecondary,
                         ),
                       ),
                     ),
                   );
                 }),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ── WEEKDAY ASSIGNMENT ──────────────────────────────────────
+              Text(
+                'ASSIGN DAYS',
+                style: AppTextStyles.labelUppercase(
+                    context.appTextSecondary),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _WeekdayAssignmentRow(
+                weekdayMap: _weekdayMap,
+                daysCount: _daysCount,
+                dayNames: List.generate(
+                    _daysCount, (i) => _dayNameControllers[i].text.trim()),
+                onChanged: (newMap) =>
+                    setState(() {
+                      _weekdayMap.clear();
+                      _weekdayMap.addAll(newMap);
+                    }),
               ),
 
               const SizedBox(height: AppSpacing.lg),
@@ -359,29 +397,34 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                   itemBuilder: (context, dayIndex) {
                     final day = _days[dayIndex];
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      padding:
+                          const EdgeInsets.only(bottom: AppSpacing.lg),
                       child: ForjaCard(
                         padding: EdgeInsets.zero,
                         child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
+                          padding:
+                              const EdgeInsets.all(AppSpacing.lg),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
                                   Text(
                                     'Day ${dayIndex + 1}',
                                     style: AppTextStyles.bodyStrong(
-                                      AppColors.textPrimary,
+                                      context.appTextPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: AppSpacing.sm),
                                   Expanded(
                                     child: TextField(
-                                      controller: _dayNameControllers[dayIndex],
+                                      controller:
+                                          _dayNameControllers[dayIndex],
                                       onChanged: (v) =>
                                           day.dayName = v,
-                                      decoration: const InputDecoration(
+                                      decoration:
+                                          const InputDecoration(
                                         isDense: true,
                                         contentPadding:
                                             EdgeInsets.symmetric(
@@ -399,16 +442,19 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                               Wrap(
                                 spacing: AppSpacing.sm,
                                 runSpacing: AppSpacing.sm,
-                                children: day.exerciseIds.map((exerciseId) {
+                                children: day.exerciseIds
+                                    .map((exerciseId) {
                                   final exerciseData =
                                       kExerciseData[exerciseId];
                                   final exerciseName =
-                                      exerciseData?['name'] as String? ??
+                                      exerciseData?['name']
+                                              as String? ??
                                           exerciseId;
                                   return GestureDetector(
                                     onTap: () {
                                       setState(() {
-                                        day.exerciseIds.remove(exerciseId);
+                                        day.exerciseIds
+                                            .remove(exerciseId);
                                       });
                                     },
                                     child: ForjaPill.accent(
@@ -421,16 +467,19 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
                               const SizedBox(height: AppSpacing.md),
 
                               GestureDetector(
-                                onTap: () => _showExercisePicker(dayIndex),
+                                onTap: () =>
+                                    _showExercisePicker(dayIndex),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.add,
-                                        color: AppColors.accent, size: 18),
-                                    const SizedBox(width: AppSpacing.xs),
+                                    Icon(Icons.add,
+                                        color: context.appAccent,
+                                        size: 18),
+                                    const SizedBox(
+                                        width: AppSpacing.xs),
                                     Text(
                                       '+ Add Exercise',
                                       style: AppTextStyles.body(
-                                          AppColors.accent),
+                                          context.appAccent),
                                     ),
                                   ],
                                 ),
@@ -457,6 +506,88 @@ class _SplitBuilderScreenState extends ConsumerState<SplitBuilderScreen> {
   }
 }
 
+// ── WEEKDAY ASSIGNMENT ROW ──────────────────────────────────────────────────
+
+class _WeekdayAssignmentRow extends StatelessWidget {
+  final Map<int, int> weekdayMap;
+  final int daysCount;
+  final List<String> dayNames;
+  final ValueChanged<Map<int, int>> onChanged;
+
+  static const _weekdayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  const _WeekdayAssignmentRow({
+    required this.weekdayMap,
+    required this.daysCount,
+    required this.dayNames,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(7, (i) {
+        final weekday = i + 1; // 1=Mon...7=Sun
+        final assignedDay = weekdayMap[weekday];
+        final isAssigned = assignedDay != null;
+        final label = isAssigned
+            ? 'D${assignedDay + 1}'
+            : _weekdayLabels[i];
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              final newMap = Map<int, int>.from(weekdayMap);
+              if (isAssigned) {
+                // Unassign
+                newMap.remove(weekday);
+              } else {
+                // Assign next unassigned day index
+                final assignedIndices = newMap.values.toSet();
+                int? nextDay;
+                for (var d = 0; d < daysCount; d++) {
+                  if (!assignedIndices.contains(d)) {
+                    nextDay = d;
+                    break;
+                  }
+                }
+                if (nextDay != null) {
+                  newMap[weekday] = nextDay;
+                }
+              }
+              onChanged(newMap);
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: isAssigned
+                    ? context.appAccentDim
+                    : context.appBgElevated,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                  color: isAssigned
+                      ? context.appAccent
+                      : context.appBorder,
+                  width: isAssigned ? 1.0 : 0.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: AppTextStyles.micro(
+                  isAssigned
+                      ? context.appAccent
+                      : context.appTextTertiary,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
 class _DayConfig {
   String dayName;
   final List<String> exerciseIds;
@@ -466,4 +597,3 @@ class _DayConfig {
     required this.exerciseIds,
   });
 }
-

@@ -9,7 +9,15 @@ import 'auth_provider.dart';
 class TodayPlan {
   final String dayName;
   final List<Exercise> exercises;
-  const TodayPlan({required this.dayName, required this.exercises});
+  /// True when today has no split day assigned (rest day) or the custom split
+  /// has no weekdayMap entry for the current weekday.
+  final bool isRest;
+
+  const TodayPlan({
+    required this.dayName,
+    required this.exercises,
+    this.isRest = false,
+  });
 }
 
 /// Resolves the current user's assigned program day into a [TodayPlan].
@@ -21,11 +29,22 @@ final todayProgramProvider = Provider<TodayPlan?>((ref) {
   if (profile == null || !profile.onboardingComplete) return null;
 
   // --- Custom split takes priority over program template ---
+  // IMPORTANT: callers selecting a pre-built program must set customSplitId: null on UserProfile
   final customSplitId = profile.customSplitId;
   if (customSplitId != null && customSplitId.isNotEmpty) {
     final split = HiveService.customSplits.get(customSplitId);
     if (split != null && split.days.isNotEmpty) {
-      final dayIndex = (DateTime.now().weekday - 1) % split.days.length;
+      // Use explicit weekday map: 1=Mon … 7=Sun → index into split.days.
+      // An unmapped weekday means this is a rest day.
+      final weekday = DateTime.now().weekday;
+      final dayIndex = split.weekdayMap[weekday];
+      if (dayIndex == null || dayIndex >= split.days.length) {
+        return const TodayPlan(
+          dayName: 'Rest Day',
+          exercises: [],
+          isRest: true,
+        );
+      }
       final splitDay = split.days[dayIndex];
 
       final exercises = splitDay.exerciseIds

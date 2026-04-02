@@ -13,6 +13,11 @@ class CustomSplit with _$CustomSplit {
     @HiveField(2) required int daysCount, // 2-6
     @HiveField(3) required List<SplitDay> days,
     @HiveField(4) required DateTime createdAt,
+    // weekday (1=Mon … 7=Sun) → index into days list.
+    // Empty map = all days are rest days.
+    // @Default ensures backwards-compat: existing Hive records without this field
+    // deserialise to {} instead of null.
+    @HiveField(5, defaultValue: <int, int>{}) @Default(<int, int>{}) Map<int, int> weekdayMap,
   }) = _CustomSplit;
 
   factory CustomSplit.fromJson(Map<String, dynamic> json) =>

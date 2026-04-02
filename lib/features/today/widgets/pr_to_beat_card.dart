@@ -32,15 +32,15 @@ class PrToBeatCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
+               Icon(
                 Icons.emoji_events_rounded,
                 color: AppColors.warm,
                 size: 14,
               ),
-              const SizedBox(width: AppSpacing.xs),
+               SizedBox(width: AppSpacing.xs),
               Text(
                 'PR TO BEAT',
-                style: AppTextStyles.labelUppercase(AppColors.textSecondary),
+                style: AppTextStyles.labelUppercase(context.appTextSecondary),
               ),
             ],
           ),
@@ -48,24 +48,24 @@ class PrToBeatCard extends StatelessWidget {
           if (_isEmpty)
             Text(
               'Complete a workout to unlock your first PR target.',
-              style: AppTextStyles.body(AppColors.textSecondary),
+              style: AppTextStyles.body(context.appTextSecondary),
             )
           else ...[
             Text(
               exerciseName,
-              style: AppTextStyles.bodyStrong(AppColors.textPrimary),
+              style: AppTextStyles.bodyStrong(context.appTextPrimary),
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
                 Text(
                   '${currentPrKg.toStringAsFixed(1)} kg',
-                  style: AppTextStyles.body(AppColors.textSecondary),
+                  style: AppTextStyles.body(context.appTextSecondary),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                const Icon(
+                 Icon(
                   Icons.arrow_forward_rounded,
-                  color: AppColors.textTertiary,
+                  color: context.appTextTertiary,
                   size: 14,
                 ),
                 const SizedBox(width: AppSpacing.sm),

@@ -21,7 +21,8 @@ final workoutProvider =
 class WorkoutState {
   final WorkoutLog? activeLog;
   final List<Exercise> exercises;
-  final int currentExerciseIndex;
+  final String? activeExerciseId;
+  final Set<String> skippedExerciseIds;
   final List<SetLog> completedSets;
   final int elapsedSeconds;
   final bool isActive;
@@ -30,26 +31,32 @@ class WorkoutState {
   const WorkoutState({
     this.activeLog,
     this.exercises = const [],
-    this.currentExerciseIndex = 0,
+    this.activeExerciseId,
+    this.skippedExerciseIds = const {},
     this.completedSets = const [],
     this.elapsedSeconds = 0,
     this.isActive = false,
     this.newPRs = const [],
   });
 
-  Exercise? get currentExercise =>
-      exercises.isNotEmpty && currentExerciseIndex < exercises.length
-          ? exercises[currentExerciseIndex]
-          : null;
+  Exercise? get currentExercise => activeExerciseId == null
+      ? null
+      : exercises.firstWhere((e) => e.id == activeExerciseId,
+          orElse: () => exercises.first);
 
   double get totalVolume => CalculationService.totalVolume(completedSets);
   int get totalSets => completedSets.where((s) => s.completed).length;
-  bool get isLastExercise => currentExerciseIndex >= exercises.length - 1;
+  bool get allResolved =>
+      exercises.isNotEmpty &&
+      exercises.every((e) =>
+          completedSets.any((s) => s.exerciseId == e.id && s.completed) ||
+          skippedExerciseIds.contains(e.id));
 
   WorkoutState copyWith({
     WorkoutLog? activeLog,
     List<Exercise>? exercises,
-    int? currentExerciseIndex,
+    String? activeExerciseId,
+    Set<String>? skippedExerciseIds,
     List<SetLog>? completedSets,
     int? elapsedSeconds,
     bool? isActive,
@@ -58,7 +65,8 @@ class WorkoutState {
       WorkoutState(
         activeLog: activeLog ?? this.activeLog,
         exercises: exercises ?? this.exercises,
-        currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
+        activeExerciseId: activeExerciseId ?? this.activeExerciseId,
+        skippedExerciseIds: skippedExerciseIds ?? this.skippedExerciseIds,
         completedSets: completedSets ?? this.completedSets,
         elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
         isActive: isActive ?? this.isActive,
@@ -85,7 +93,8 @@ class WorkoutNotifier extends StateNotifier<WorkoutState> {
     state = state.copyWith(
       activeLog: log,
       exercises: exercises,
-      currentExerciseIndex: 0,
+      activeExerciseId: exercises.isNotEmpty ? exercises.first.id : null,
+      skippedExerciseIds: const {},
       completedSets: [],
       elapsedSeconds: 0,
       isActive: true,
@@ -113,10 +122,21 @@ class WorkoutNotifier extends StateNotifier<WorkoutState> {
     _updateWorkoutLog(updatedSets);
   }
 
+  void jumpToExercise(String exerciseId) {
+    if (state.exercises.any((e) => e.id == exerciseId)) {
+      state = state.copyWith(activeExerciseId: exerciseId);
+    }
+  }
+
+  void markSkipped(String exerciseId) {
+    final updated = {...state.skippedExerciseIds, exerciseId};
+    state = state.copyWith(skippedExerciseIds: updated);
+  }
+
   void nextExercise() {
-    if (!state.isLastExercise) {
-      state =
-          state.copyWith(currentExerciseIndex: state.currentExerciseIndex + 1);
+    final idx = state.exercises.indexWhere((e) => e.id == state.activeExerciseId);
+    if (idx != -1 && idx < state.exercises.length - 1) {
+      state = state.copyWith(activeExerciseId: state.exercises[idx + 1].id);
     }
   }
 

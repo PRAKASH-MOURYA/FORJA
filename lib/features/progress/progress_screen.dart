@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme.dart';
 import '../../shared/widgets/premium_card.dart';
 import '../../shared/widgets/section_header.dart';
-import '../../shared/constants/dummy_data.dart';
+import '../../shared/repositories/workout_repository.dart';
+import '../../shared/providers/auth_provider.dart';
 import 'progress_provider.dart';
+import 'progress_utils.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   const ProgressScreen({super.key});
@@ -17,21 +19,17 @@ class ProgressScreen extends ConsumerStatefulWidget {
 
 class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   int _selectedPeriod = 0; // 0=7D, 1=30D, 2=90D, 3=All
-  String _selectedLift = 'Barbell Bench Press';
+  String _selectedLift = 'Bench Press';
 
   static const _periods = ['7D', '30D', '90D', 'All'];
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(progressProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.bg : AppColors.bgLight;
-    final textPrimary =
-        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
 
     if (!state.isLoading && state.workoutCount == 0) {
       return Scaffold(
-        backgroundColor: bg,
+        backgroundColor: context.appBg,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -39,25 +37,20 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Progress',
-                    style: AppTextStyles.displayLarge(textPrimary)),
+                    style: AppTextStyles.displayLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.xs),
                 Text('Start training to see your progress',
-                    style: AppTextStyles.body(isDark
-                        ? AppColors.textSecondary
-                        : AppColors.textSecondaryLight)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const Spacer(),
                 Center(
                   child: PremiumCard(
                     child: Column(
                       children: [
-                        const Text('📊',
-                            style: TextStyle(fontSize: 48)),
+                        const Text('📊', style: TextStyle(fontSize: 48)),
                         const SizedBox(height: AppSpacing.md),
                         Text(
                           'Log your first workout to see progress.',
-                          style: AppTextStyles.body(isDark
-                              ? AppColors.textSecondary
-                              : AppColors.textSecondaryLight),
+                          style: AppTextStyles.body(context.appTextSecondary),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -72,8 +65,29 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       );
     }
 
+    // Volume delta (this week vs last week)
+    final workoutRepo = WorkoutRepository();
+    final now = DateTime.now();
+    final weekStart = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    final lastWeekStart = weekStart.subtract(const Duration(days: 7));
+    final thisWeekLogs = workoutRepo.getForWeek(weekStart);
+    final lastWeekLogs = workoutRepo.getForWeek(lastWeekStart);
+    final delta = volumeDeltaLabel(thisWeekLogs, lastWeekLogs);
+
+    // Lift names from real data
+    final liftNames = state.liftTrends.map((t) => t.exerciseName).toList();
+    if (liftNames.isNotEmpty && !liftNames.contains(_selectedLift)) {
+      _selectedLift = liftNames.first;
+    }
+
+    // Consistency grid from real data
+    final allLogs = workoutRepo.getAll();
+    final profile = ref.watch(userProfileProvider);
+    final weekdayMap = profile?.customSplitId != null ? <int, int>{} : null;
+
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: context.appBg,
       body: Stack(
         children: [
           Positioned(
@@ -97,7 +111,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     children: [
                       Expanded(
                         child: Text('Progress',
-                            style: AppTextStyles.displayLarge(textPrimary)),
+                            style: AppTextStyles.displayLarge(
+                                context.appTextPrimary)),
                       ),
                       _PeriodSelector(
                         periods: _periods,
@@ -115,7 +130,8 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                       Expanded(
                         child: _MiniStatCard(
                           label: 'Volume',
-                          value: '${(state.totalVolumeKg / 1000).toStringAsFixed(1)}T',
+                          value:
+                              '${(state.totalVolumeKg / 1000).toStringAsFixed(1)}T',
                           color: AppColors.accent,
                         ),
                       ),
@@ -140,35 +156,39 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
 
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // ── VOLUME BAR CHART (fl_chart) ────────────────────────
-                  const SectionHeader('Weekly Volume',
-                      subtitle: 'kg per session'),
+                  // ── VOLUME BAR CHART ────────────────────────────────────
+                  SectionHeader(
+                    'Weekly Volume',
+                    subtitle: delta ?? 'kg per session',
+                  ),
                   PremiumCard(
-                    child: _VolumeBarChart(
-                      volumes: state.weeklyVolumes,
-                      isDark: isDark,
-                    ),
+                    child: _VolumeBarChart(volumes: state.weeklyVolumes),
                   ).animate().fadeIn(delay: 160.ms, duration: 400.ms),
 
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // ── STRENGTH TRENDS (fl_chart) ─────────────────────────
-                  SectionHeader('Strength Trends', subtitle: 'My lifts',
-                      actionLabel: 'See all', onAction: () {}),
-                  _LiftSelector(
-                    lifts: DummyData.strengthTrends.keys.toList(),
-                    selected: _selectedLift,
-                    onSelect: (l) => setState(() => _selectedLift = l),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  PremiumCard(
-                    child: _StrengthLineChart(
-                      lift: _selectedLift,
-                      isDark: isDark,
+                  // ── STRENGTH TRENDS ─────────────────────────────────────
+                  if (liftNames.isNotEmpty) ...[
+                    SectionHeader('Strength Trends',
+                        subtitle: 'My lifts',
+                        actionLabel: 'See all',
+                        onAction: () {}),
+                    _LiftSelector(
+                      lifts: liftNames,
+                      selected: _selectedLift,
+                      onSelect: (l) => setState(() => _selectedLift = l),
                     ),
-                  ).animate().fadeIn(delay: 240.ms, duration: 400.ms),
-
-                  const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.md),
+                    PremiumCard(
+                      child: _StrengthLineChart(
+                        liftTrend: state.liftTrends.firstWhere(
+                          (t) => t.exerciseName == _selectedLift,
+                          orElse: () => state.liftTrends.first,
+                        ),
+                      ),
+                    ).animate().fadeIn(delay: 240.ms, duration: 400.ms),
+                    const SizedBox(height: AppSpacing.xxl),
+                  ],
 
                   // ── PERSONAL RECORDS ───────────────────────────────────
                   const SectionHeader('Personal Records'),
@@ -176,8 +196,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     final i = entry.key;
                     final trend = entry.value;
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: AppSpacing.sm),
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: _PrCard(
                         exerciseName: trend.exerciseName,
                         weightKg: trend.currentOneRepMax,
@@ -197,7 +216,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                   const SectionHeader('Consistency',
                       subtitle: '12-week grid'),
                   PremiumCard(
-                    child: _ConsistencyHeatmap(isDark: isDark),
+                    child: _ConsistencyHeatmap(
+                      logs: allLogs,
+                      weekdayMap: weekdayMap,
+                    ),
                   ).animate().fadeIn(delay: 500.ms, duration: 400.ms),
 
                   const SizedBox(height: AppSpacing.xxl),
@@ -223,16 +245,12 @@ class _PeriodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+        color: context.appBgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(
-          color: isDark ? AppColors.border : AppColors.borderLight,
-          width: 0.5,
-        ),
+        border: Border.all(color: context.appBorder, width: 0.5),
       ),
       child: Row(
         children: periods.asMap().entries.map((e) {
@@ -243,13 +261,13 @@ class _PeriodSelector extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.accent : Colors.transparent,
+                color: isSelected ? context.appAccent : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
                 e.value,
                 style: AppTextStyles.micro(
-                  isSelected ? AppColors.bg : AppColors.textTertiary,
+                  isSelected ? context.appBg : context.appTextTertiary,
                 ),
               ),
             ),
@@ -272,7 +290,6 @@ class _MiniStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -284,9 +301,7 @@ class _MiniStatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(value,
-              style: AppTextStyles.dataMedium(
-                isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
-              )),
+              style: AppTextStyles.dataMedium(context.appTextPrimary)),
           const SizedBox(height: 2),
           Text(label, style: AppTextStyles.micro(color)),
         ],
@@ -299,9 +314,8 @@ class _MiniStatCard extends StatelessWidget {
 
 class _VolumeBarChart extends StatelessWidget {
   final List<double> volumes;
-  final bool isDark;
 
-  const _VolumeBarChart({required this.volumes, required this.isDark});
+  const _VolumeBarChart({required this.volumes});
 
   @override
   Widget build(BuildContext context) {
@@ -317,12 +331,11 @@ class _VolumeBarChart extends StatelessWidget {
           maxY: maxVal * 1.2,
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) =>
-                  isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+              getTooltipColor: (_) => context.appBgElevated,
               getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                   BarTooltipItem(
                 '${(rod.toY / 1000).toStringAsFixed(1)}T',
-                AppTextStyles.caption(AppColors.textPrimary),
+                AppTextStyles.caption(context.appTextPrimary),
               ),
             ),
           ),
@@ -338,30 +351,26 @@ class _VolumeBarChart extends StatelessWidget {
                     labels[i.clamp(0, 6)],
                     style: AppTextStyles.micro(
                       i == todayIndex
-                          ? AppColors.accent
-                          : (isDark
-                              ? AppColors.textTertiary
-                              : AppColors.textTertiaryLight),
+                          ? context.appAccent
+                          : context.appTextTertiary,
                     ),
                   );
                 },
                 reservedSize: 24,
               ),
             ),
-            leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
+            leftTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           gridData: FlGridData(
             show: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) => FlLine(
-              color: isDark
-                  ? AppColors.border
-                  : AppColors.borderLight,
+              color: context.appBorder,
               strokeWidth: 0.5,
             ),
           ),
@@ -374,16 +383,10 @@ class _VolumeBarChart extends StatelessWidget {
                 BarChartRodData(
                   toY: e.value,
                   width: 18,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(6)),
-                  gradient: isToday
-                      ? AppColors.accentGradient
-                      : null,
-                  color: isToday
-                      ? null
-                      : (isDark
-                          ? AppColors.bgElevated
-                          : AppColors.bgElevatedLight),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(6)),
+                  gradient: isToday ? AppColors.accentGradient : null,
+                  color: isToday ? null : context.appBgElevated,
                 ),
               ],
             );
@@ -423,24 +426,16 @@ class _LiftSelector extends StatelessWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.accent
-                    : (Theme.of(context).brightness == Brightness.dark
-                        ? AppColors.bgCard
-                        : AppColors.bgCardLight),
+                color: isSelected ? context.appAccent : context.appBgCard,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 border: Border.all(
-                  color: isSelected
-                      ? AppColors.accent
-                      : (Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.border
-                          : AppColors.borderLight),
+                  color: isSelected ? context.appAccent : context.appBorder,
                 ),
               ),
               child: Text(
                 lifts[i],
                 style: AppTextStyles.caption(
-                  isSelected ? AppColors.bg : AppColors.textSecondary,
+                  isSelected ? context.appBg : context.appTextSecondary,
                 ),
               ),
             ),
@@ -454,31 +449,33 @@ class _LiftSelector extends StatelessWidget {
 // ── STRENGTH LINE CHART ───────────────────────────────────────────────────────
 
 class _StrengthLineChart extends StatelessWidget {
-  final String lift;
-  final bool isDark;
+  final LiftTrend liftTrend;
 
-  const _StrengthLineChart({required this.lift, required this.isDark});
+  const _StrengthLineChart({required this.liftTrend});
 
   @override
   Widget build(BuildContext context) {
-    final data = DummyData.strengthTrends[lift] ?? [];
-    if (data.isEmpty) {
+    // Build a simple two-point line from previous → current 1RM
+    final data = [liftTrend.previousOneRepMax, liftTrend.currentOneRepMax];
+    final validData = data.where((d) => d > 0).toList();
+    if (validData.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
           child: Text('No data yet',
-              style: AppTextStyles.body(AppColors.textSecondary)),
+              style: AppTextStyles.body(context.appTextSecondary)),
         ),
       );
     }
 
-    final spots = data
+    final lineColor = trendColor(validData);
+    final spots = validData
         .asMap()
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value))
         .toList();
-    final minY = data.reduce((a, b) => a < b ? a : b) - 10;
-    final maxY = data.reduce((a, b) => a > b ? a : b) + 10;
+    final minY = validData.reduce((a, b) => a < b ? a : b) - 10;
+    final maxY = validData.reduce((a, b) => a > b ? a : b) + 10;
 
     return SizedBox(
       height: 160,
@@ -488,12 +485,11 @@ class _StrengthLineChart extends StatelessWidget {
           maxY: maxY,
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) =>
-                  isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+              getTooltipColor: (_) => context.appBgElevated,
               getTooltipItems: (spots) => spots
                   .map((s) => LineTooltipItem(
                         '${s.y.toStringAsFixed(0)} kg',
-                        AppTextStyles.caption(AppColors.textPrimary),
+                        AppTextStyles.caption(context.appTextPrimary),
                       ))
                   .toList(),
             ),
@@ -502,59 +498,43 @@ class _StrengthLineChart extends StatelessWidget {
             show: true,
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) => FlLine(
-              color: isDark ? AppColors.border : AppColors.borderLight,
+              color: context.appBorder,
               strokeWidth: 0.5,
             ),
           ),
           borderData: FlBorderData(show: false),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (val, _) {
-                  const labels = ['Wk1', 'Wk2', 'Wk3', 'Wk4'];
-                  final i = val.toInt();
-                  return Text(
-                    i < labels.length ? labels[i] : '',
-                    style: AppTextStyles.micro(
-                      isDark
-                          ? AppColors.textTertiary
-                          : AppColors.textTertiaryLight,
-                    ),
-                  );
-                },
-                reservedSize: 24,
-              ),
-            ),
-            leftTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
+          titlesData: const FlTitlesData(
+            bottomTitles:
+                AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles:
+                AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           lineBarsData: [
             LineChartBarData(
               spots: spots,
               isCurved: true,
               curveSmoothness: 0.35,
-              color: AppColors.accent,
+              color: lineColor,
               barWidth: 2.5,
               dotData: FlDotData(
                 show: true,
                 getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
                   radius: 4,
-                  color: AppColors.accent,
+                  color: lineColor,
                   strokeWidth: 2,
-                  strokeColor: isDark ? AppColors.bgCard : AppColors.bgCardLight,
+                  strokeColor: context.appBgCard,
                 ),
               ),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.accent.withValues(alpha: 0.25),
-                    AppColors.accent.withValues(alpha: 0.0),
+                    lineColor.withValues(alpha: 0.25),
+                    lineColor.withValues(alpha: 0.0),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -596,7 +576,6 @@ class _PrCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _colors[colorIndex % _colors.length];
     if (weightKg == 0) return const SizedBox.shrink();
 
@@ -611,17 +590,20 @@ class _PrCard extends StatelessWidget {
               children: [
                 Text(
                   exerciseName,
-                  style: AppTextStyles.bodyStrong(
-                    isDark
-                        ? AppColors.textPrimary
-                        : AppColors.textPrimaryLight,
-                  ),
+                  style:
+                      AppTextStyles.bodyStrong(context.appTextPrimary),
                 ),
                 if (trendKg > 0) ...[
                   const SizedBox(height: 2),
                   Text(
                     '+${trendKg.toStringAsFixed(1)} kg since last month',
-                    style: AppTextStyles.caption(AppColors.accent),
+                    style: AppTextStyles.caption(AppColors.positive),
+                  ),
+                ] else if (trendKg < 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${trendKg.toStringAsFixed(1)} kg since last month',
+                    style: AppTextStyles.caption(AppColors.danger),
                   ),
                 ],
               ],
@@ -639,10 +621,12 @@ class _PrCard extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: isNew ? AppColors.warm.withValues(alpha: 0.2) : color.withValues(alpha: 0.12),
+                  color: isNew
+                      ? AppColors.warm.withValues(alpha: 0.2)
+                      : color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Text(
@@ -661,12 +645,28 @@ class _PrCard extends StatelessWidget {
 // ── CONSISTENCY HEATMAP ───────────────────────────────────────────────────────
 
 class _ConsistencyHeatmap extends StatelessWidget {
-  final bool isDark;
-  const _ConsistencyHeatmap({required this.isDark});
+  final List<dynamic> logs;
+  final Map<int, int>? weekdayMap;
+
+  const _ConsistencyHeatmap({required this.logs, this.weekdayMap});
 
   @override
   Widget build(BuildContext context) {
-    final grid = DummyData.consistencyGrid;
+    // Build real 12-week grid from workout logs
+    final now = DateTime.now();
+    final todayOnly = DateTime(now.year, now.month, now.day);
+    // Start of the current week (Monday)
+    final currentWeekStart =
+        todayOnly.subtract(Duration(days: todayOnly.weekday - 1));
+    // We want 12 weeks ending at current week
+    final gridStart = currentWeekStart.subtract(const Duration(days: 77)); // 11 weeks back
+
+    final grid = List.generate(12, (week) {
+      return List.generate(7, (day) {
+        final date = gridStart.add(Duration(days: week * 7 + day));
+        return classifyDay(date, logs.cast(), weekdayMap);
+      });
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,10 +677,7 @@ class _ConsistencyHeatmap extends StatelessWidget {
                     child: Center(
                       child: Text(d,
                           style: AppTextStyles.micro(
-                            isDark
-                                ? AppColors.textTertiary
-                                : AppColors.textTertiaryLight,
-                          )),
+                              context.appTextTertiary)),
                     ),
                   ))
               .toList(),
@@ -691,16 +688,13 @@ class _ConsistencyHeatmap extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 5),
             child: Row(
               children: week
-                  .map((day) => Expanded(
+                  .map((cell) => Expanded(
                         child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          margin:
+                              const EdgeInsets.symmetric(horizontal: 2),
                           height: 14,
                           decoration: BoxDecoration(
-                            color: day == 1
-                                ? AppColors.accent
-                                : (isDark
-                                    ? AppColors.bgElevated
-                                    : AppColors.bgElevatedLight),
+                            color: _cellColor(cell, context),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -714,9 +708,7 @@ class _ConsistencyHeatmap extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Text('Less',
-                style: AppTextStyles.micro(
-                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
-                )),
+                style: AppTextStyles.micro(context.appTextTertiary)),
             const SizedBox(width: 6),
             ...List.generate(
               4,
@@ -725,19 +717,29 @@ class _ConsistencyHeatmap extends StatelessWidget {
                 height: 12,
                 margin: const EdgeInsets.only(left: 3),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.2 + i * 0.25),
+                  color: context.appAccent
+                      .withValues(alpha: 0.2 + i * 0.25),
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
             const SizedBox(width: 6),
             Text('More',
-                style: AppTextStyles.micro(
-                  isDark ? AppColors.textTertiary : AppColors.textTertiaryLight,
-                )),
+                style: AppTextStyles.micro(context.appTextTertiary)),
           ],
         ),
       ],
     );
+  }
+
+  Color _cellColor(CellState cell, BuildContext context) {
+    switch (cell) {
+      case CellState.workout:
+        return context.appAccent;
+      case CellState.missed:
+        return AppColors.danger.withValues(alpha: 0.4);
+      case CellState.neutral:
+        return context.appBgElevated;
+    }
   }
 }

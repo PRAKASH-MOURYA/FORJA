@@ -31,15 +31,36 @@ class WorkoutRepository {
           .toList()
         ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
 
-  List<SetLog> getPendingSetLogs() =>
-      HiveService.setLogs.values
-          .where((s) => s.syncStatus == 'pending')
-          .toList();
+  List<SetLog> getPendingSetLogs() => HiveService.setLogs.values
+      .where((s) => s.syncStatus == 'pending')
+      .toList();
 
   Future<void> saveSet(SetLog set) => HiveService.setLogs.put(set.id, set);
 
   Future<void> saveAllSets(List<SetLog> sets) async {
     final map = {for (final s in sets) s.id: s};
     await HiveService.setLogs.putAll(map);
+  }
+
+  List<SetLog> getSetsForExercise(String exerciseId) =>
+      HiveService.setLogs.values
+          .where((s) => s.exerciseId == exerciseId && s.completed)
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+  List<SetLog> getRecentWorkoutsForExercise(String exerciseId,
+      {int limit = 5}) {
+    final allWorkouts = getAll();
+    final result = <SetLog>[];
+    for (final workout in allWorkouts) {
+      final sets = getSetsForWorkout(workout.id)
+          .where((s) => s.exerciseId == exerciseId && s.completed)
+          .toList();
+      if (sets.isNotEmpty) {
+        result.addAll(sets);
+        if (result.length >= limit) break;
+      }
+    }
+    return result;
   }
 }

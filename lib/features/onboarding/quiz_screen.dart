@@ -123,7 +123,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       body: SafeArea(
         child: Column(
           children: [
@@ -176,9 +176,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             child: AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: _currentQuestion > 0 ? 1.0 : 0.0,
-              child: const Icon(
+              child:  Icon(
                 Icons.arrow_back_ios,
-                color: AppColors.textSecondary,
+                color: context.appTextSecondary,
                 size: 18,
               ),
             ),
@@ -200,7 +200,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         ? AppColors.accent
                         : isPast
                             ? AppColors.accent.withValues(alpha: 0.4)
-                            : AppColors.textTertiary,
+                            : context.appTextTertiary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 );
@@ -274,14 +274,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(emoji, style: const TextStyle(fontSize: 42)),
-                const SizedBox(height: 6),
+                Text(emoji, style:  TextStyle(fontSize: 42)),
+                 SizedBox(height: 6),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style:  TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: context.appTextSecondary,
                     letterSpacing: 0.6,
                   ),
                 ),
@@ -313,12 +313,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.accentDim : AppColors.bgCard,
+            color: isSelected ? AppColors.accentDim : context.appBgCard,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: isSelected
                   ? accentColor.withValues(alpha: 0.5)
-                  : AppColors.border,
+                  : context.appBorder,
               width: isSelected ? 1.5 : 0.5,
             ),
             boxShadow: isSelected
@@ -341,14 +341,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? accentColor.withValues(alpha: 0.18)
-                      : AppColors.bgElevated,
+                      : context.appBgElevated,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
-                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  child: Text(emoji, style:  TextStyle(fontSize: 22)),
                 ),
               ),
-              const SizedBox(width: 14),
+               SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,15 +359,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color:
-                            isSelected ? accentColor : AppColors.textPrimary,
+                            isSelected ? accentColor : context.appTextPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       desc,
-                      style: const TextStyle(
+                      style:  TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: context.appTextSecondary,
                       ),
                     ),
                   ],
@@ -384,7 +384,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     color: accentColor,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check, color: Colors.black, size: 13),
+                  child:  Icon(Icons.check, color: Colors.black, size: 13),
                 ),
               ),
             ],
@@ -413,7 +413,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       case 6:
         return _buildWeightQuestion();
       default:
-        return const SizedBox.shrink();
+        return  SizedBox.shrink();
     }
   }
 
@@ -440,15 +440,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             secondaryColor: heroSecondary,
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+            padding:  EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(question,
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(subtitle,
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const SizedBox(height: AppSpacing.xl),
                 ...options.map((opt) => _buildPremiumOptionCard(
                       value: opt.$1,
@@ -522,10 +522,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('How many days per week?',
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text("We'll build your split around this.",
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const SizedBox(height: AppSpacing.xxxl),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -541,12 +541,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.accentDim
-                              : AppColors.bgCard,
+                              : context.appBgCard,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           border: Border.all(
                             color: isSelected
                                 ? AppColors.accent.withValues(alpha: 0.5)
-                                : AppColors.border,
+                                : context.appBorder,
                             width: isSelected ? 1.5 : 0.5,
                           ),
                           boxShadow: isSelected
@@ -571,7 +571,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 fontWeight: FontWeight.w800,
                                 color: isSelected
                                     ? AppColors.accent
-                                    : AppColors.textPrimary,
+                                    : context.appTextPrimary,
                               ),
                             ),
                             Text(
@@ -580,7 +580,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 fontSize: 11,
                                 color: isSelected
                                     ? AppColors.accent
-                                    : AppColors.textSecondary,
+                                    : context.appTextSecondary,
                               ),
                             ),
                           ],
@@ -642,10 +642,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Any injuries or limitations?',
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text("We'll avoid exercises that aggravate these.",
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const SizedBox(height: AppSpacing.xxl),
                 Wrap(
                   spacing: AppSpacing.sm,
@@ -680,13 +680,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         decoration: BoxDecoration(
                           color: isSelected
                               ? AppColors.warmDim
-                              : AppColors.bgCard,
+                              : context.appBgCard,
                           borderRadius:
                               BorderRadius.circular(AppRadius.pill),
                           border: Border.all(
                             color: isSelected
                                 ? AppColors.warm.withValues(alpha: 0.5)
-                                : AppColors.border,
+                                : context.appBorder,
                             width: isSelected ? 1.5 : 0.5,
                           ),
                           boxShadow: isSelected
@@ -704,8 +704,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(emoji,
-                                style: const TextStyle(fontSize: 16)),
-                            const SizedBox(width: AppSpacing.sm),
+                                style:  TextStyle(fontSize: 16)),
+                             SizedBox(width: AppSpacing.sm),
                             Text(
                               label,
                               style: TextStyle(
@@ -713,7 +713,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
                                     ? AppColors.warm
-                                    : AppColors.textPrimary,
+                                    : context.appTextPrimary,
                               ),
                             ),
                           ],
@@ -749,18 +749,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('How tall are you?',
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                     'Used to calculate protein targets and daily energy expenditure.',
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const SizedBox(height: AppSpacing.xxxl),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         keyboardType: TextInputType.number,
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppColors.accent,
@@ -769,19 +769,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           hintText: 'e.g. 175',
                           hintStyle: TextStyle(
                               color:
-                                  AppColors.textSecondary.withValues(alpha: 0.5)),
+                                  context.appTextSecondary.withValues(alpha: 0.5)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             borderSide:
-                                const BorderSide(color: AppColors.border),
+                                BorderSide(color: context.appBorder),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
-                            borderSide: const BorderSide(
+                            borderSide:  BorderSide(
                                 color: AppColors.accent, width: 2),
                           ),
                           filled: true,
-                          fillColor: AppColors.bgCard,
+                          fillColor: context.appBgCard,
                         ),
                         onChanged: (val) {
                           setState(() {
@@ -791,9 +791,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    const Text('cm',
+                    Text('cm',
                         style: TextStyle(
-                            fontSize: 20, color: AppColors.textSecondary)),
+                            fontSize: 20, color: context.appTextSecondary)),
                   ],
                 ),
               ],
@@ -822,11 +822,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("What's your current weight?",
-                    style: AppTextStyles.headingLarge(AppColors.textPrimary)),
+                    style: AppTextStyles.headingLarge(context.appTextPrimary)),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                     'Used to generate your daily protein target (1.6g per kg).',
-                    style: AppTextStyles.body(AppColors.textSecondary)),
+                    style: AppTextStyles.body(context.appTextSecondary)),
                 const SizedBox(height: AppSpacing.xxxl),
                 Row(
                   children: [
@@ -834,7 +834,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       child: TextField(
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: AppColors.accent,
@@ -843,19 +843,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                           hintText: 'e.g. 75.5',
                           hintStyle: TextStyle(
                               color:
-                                  AppColors.textSecondary.withValues(alpha: 0.5)),
+                                  context.appTextSecondary.withValues(alpha: 0.5)),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
                             borderSide:
-                                const BorderSide(color: AppColors.border),
+                                BorderSide(color: context.appBorder),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
-                            borderSide: const BorderSide(
+                            borderSide:  BorderSide(
                                 color: AppColors.accent, width: 2),
                           ),
                           filled: true,
-                          fillColor: AppColors.bgCard,
+                          fillColor: context.appBgCard,
                         ),
                         onChanged: (val) {
                           setState(() {
@@ -865,9 +865,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    const Text('kg',
+                    Text('kg',
                         style: TextStyle(
-                            fontSize: 20, color: AppColors.textSecondary)),
+                            fontSize: 20, color: context.appTextSecondary)),
                   ],
                 ),
               ],

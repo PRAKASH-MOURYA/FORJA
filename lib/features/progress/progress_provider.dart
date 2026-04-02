@@ -35,23 +35,24 @@ class ProgressState {
     List<LiftTrend>? liftTrends,
     List<Map<String, dynamic>>? recentPRs,
     bool? isLoading,
-  }) => ProgressState(
-    totalVolumeKg: totalVolumeKg ?? this.totalVolumeKg,
-    workoutCount: workoutCount ?? this.workoutCount,
-    streakWeeks: streakWeeks ?? this.streakWeeks,
-    prsThisWeek: prsThisWeek ?? this.prsThisWeek,
-    weeklyVolumes: weeklyVolumes ?? this.weeklyVolumes,
-    liftTrends: liftTrends ?? this.liftTrends,
-    recentPRs: recentPRs ?? this.recentPRs,
-    isLoading: isLoading ?? this.isLoading,
-  );
+  }) =>
+      ProgressState(
+        totalVolumeKg: totalVolumeKg ?? this.totalVolumeKg,
+        workoutCount: workoutCount ?? this.workoutCount,
+        streakWeeks: streakWeeks ?? this.streakWeeks,
+        prsThisWeek: prsThisWeek ?? this.prsThisWeek,
+        weeklyVolumes: weeklyVolumes ?? this.weeklyVolumes,
+        liftTrends: liftTrends ?? this.liftTrends,
+        recentPRs: recentPRs ?? this.recentPRs,
+        isLoading: isLoading ?? this.isLoading,
+      );
 }
 
 class LiftTrend {
   const LiftTrend({
     required this.exerciseName,
     required this.currentOneRepMax,
-    required this.previousOneRepMax, 
+    required this.previousOneRepMax,
   });
 
   final String exerciseName;
@@ -75,31 +76,34 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
     state = state.copyWith(isLoading: true);
 
     final allWorkouts = _workoutRepo.getAll();
-    final totalVolume = allWorkouts.fold(0.0, (sum, w) => sum + w.totalVolumeKg);
+    final totalVolume =
+        allWorkouts.fold(0.0, (sum, w) => sum + w.totalVolumeKg);
     final profile = _profileRepo.get();
 
     // Weekly volume bar chart (Mon–Sun current week)
     final now = DateTime.now();
-    final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1)); // Monday midnight
+    final weekStart = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1)); // Monday midnight
     final weekWorkouts = _workoutRepo.getForWeek(weekStart);
     final weeklyVolumes = List.generate(7, (i) {
       final day = weekStart.add(Duration(days: i));
       final workoutsOnDay = weekWorkouts.where((w) =>
-        w.startedAt.year == day.year &&
-        w.startedAt.month == day.month &&
-        w.startedAt.day == day.day
-      );
+          w.startedAt.year == day.year &&
+          w.startedAt.month == day.month &&
+          w.startedAt.day == day.day);
       return workoutsOnDay.fold(0.0, (sum, w) => sum + w.totalVolumeKg);
     });
 
     // PRs this week
     final weekStartTimestamp = weekStart.toIso8601String();
     final rawRecentPRs = _prRepo.getRecentPRs(limit: 20);
-    final recentPRs = rawRecentPRs.map((e) => Map<String, dynamic>.from(e)).toList();
-    
+    final recentPRs =
+        rawRecentPRs.map((e) => Map<String, dynamic>.from(e)).toList();
+
     final prsThisWeek = recentPRs.where((pr) {
       final achievedAt = pr['achieved_at'] as String?;
-      return achievedAt != null && achievedAt.compareTo(weekStartTimestamp) >= 0;
+      return achievedAt != null &&
+          achievedAt.compareTo(weekStartTimestamp) >= 0;
     }).length;
 
     // 1RM trends for key lifts
@@ -114,8 +118,8 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
       final allPrsForLift = recentPRs
           .where((pr) => pr['exercise_id'] == lift.$2)
           .toList()
-          ..sort((a, b) => (b['estimated_1rm'] as double)
-              .compareTo(a['estimated_1rm'] as double));
+        ..sort((a, b) => (b['estimated_1rm'] as double)
+            .compareTo(a['estimated_1rm'] as double));
       final prev = allPrsForLift.length > 1
           ? (allPrsForLift[1]['estimated_1rm'] as double)
           : 0.0;
@@ -141,7 +145,8 @@ class ProgressNotifier extends StateNotifier<ProgressState> {
   void refresh() => _load();
 }
 
-final progressProvider = StateNotifierProvider<ProgressNotifier, ProgressState>((ref) {
+final progressProvider =
+    StateNotifierProvider<ProgressNotifier, ProgressState>((ref) {
   return ProgressNotifier(
     ref.watch(workoutRepositoryProvider),
     ref.watch(prRepositoryProvider),

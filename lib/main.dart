@@ -6,6 +6,7 @@ import 'app/router.dart';
 import 'app/theme.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/sync_provider.dart';
+import 'shared/providers/auth_provider.dart';
 import 'shared/services/hive_service.dart';
 import 'shared/services/notification_service.dart';
 import 'shared/services/secure_local_storage.dart';
@@ -24,19 +25,41 @@ Future<void> main() async {
   ));
 
   await HiveService.init();
-
-  await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL',
-        defaultValue: 'https://fjsgcacjbxyoxctmvvqq.supabase.co'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY',
-        defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqc2djYWNqYnh5b3hjdG12dnFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NjI0MDQsImV4cCI6MjA4OTIzODQwNH0.MRdxPFgFFLUqNiaO_uKGBfY1zmW4mAEcNZV6apEHDBA'),
-    authOptions: FlutterAuthClientOptions(
-      localStorage: SecureLocalStorage(),
-    ),
-  );
   await NotificationService.init();
 
-  runApp(const ProviderScope(child: ForjaApp()));
+  final supabaseUrl =
+      const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  final supabaseAnonKey =
+      const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+
+  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: SecureLocalStorage(),
+        ),
+      );
+      runApp(
+        ProviderScope(
+          overrides: [
+            isSupabaseConfiguredProvider.overrideWith((ref) => true),
+          ],
+          child: const ForjaApp(),
+        ),
+      );
+      return;
+    } catch (e) {
+      debugPrint('Supabase initialization failed: $e');
+    }
+  }
+
+  runApp(
+    ProviderScope(
+      child: const ForjaApp(),
+    ),
+  );
 }
 
 class ForjaApp extends ConsumerWidget {

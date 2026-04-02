@@ -43,8 +43,7 @@ class _QuickCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    
     return PremiumCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
       onTap: onTap,
@@ -57,13 +56,13 @@ class _QuickCard extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              color: context.appTextSecondary,
               size: 28,
             ),
             Text(
               label,
               style: AppTextStyles.bodyStrong(
-                isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
+                context.appTextPrimary,
               ),
             ),
           ],

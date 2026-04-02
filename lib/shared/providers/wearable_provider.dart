@@ -3,10 +3,11 @@ import 'package:health/health.dart';
 import '../services/wearable_service.dart';
 import '../models/wearable_snapshot.dart';
 
-// Global Health instance — CRITICAL: Health() is no longer a factory in v12+
-final _health = Health();
-
-final wearableServiceProvider = Provider<WearableService>((ref) => WearableService(_health));
+// Health instance per service — NOT a global singleton
+final wearableServiceProvider = Provider<WearableService>((ref) {
+  final health = Health();
+  return WearableService(health);
+});
 
 /// Fetches wearable data once per day. Returns null if permission denied or no data.
 final wearableProvider = FutureProvider<WearableSnapshot?>((ref) async {

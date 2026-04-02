@@ -32,31 +32,31 @@ class _RecoveryHeatmapCardState extends State<RecoveryHeatmapCard> {
               vertical: AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: AppColors.bgElevated,
+              color: context.appBgElevated,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border, width: 0.5),
+              border: Border.all(color: context.appBorder, width: 0.5),
             ),
             child: Row(
               children: [
-                const Icon(
+                 Icon(
                   Icons.grid_view_rounded,
-                  color: AppColors.textSecondary,
+                  color: context.appTextSecondary,
                   size: 14,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     widget.summaryText,
-                    style: AppTextStyles.body(AppColors.textSecondary),
+                    style: AppTextStyles.body(context.appTextSecondary),
                   ),
                 ),
                 AnimatedRotation(
                   turns: _expanded ? 0.5 : 0.0,
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeOutCubic,
-                  child: const Icon(
+                  child:  Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textTertiary,
+                    color: context.appTextTertiary,
                     size: 18,
                   ),
                 ),
@@ -109,7 +109,7 @@ class _RecoveryHeatmapCardState extends State<RecoveryHeatmapCard> {
                           borderRadius:
                               BorderRadius.circular(AppRadius.md),
                           border: Border.all(
-                            color: AppColors.border,
+                            color: context.appBorder,
                             width: 0.3,
                           ),
                         ),

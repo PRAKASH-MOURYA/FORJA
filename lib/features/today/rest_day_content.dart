@@ -19,9 +19,9 @@ class RestDayContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSectionHeader('MOBILITY'),
+        _buildSectionHeader(context, 'MOBILITY'),
         const SizedBox(height: AppSpacing.sm),
-        _buildBulletList([
+        _buildBulletList(context, [
           'Hip flexor stretch (2x 60s / side)',
           'Couch stretch (2x 60s / side)',
           'Pigeon pose (2x 60s / side)',
@@ -30,9 +30,9 @@ class RestDayContent extends StatelessWidget {
         ]),
         const SizedBox(height: AppSpacing.xl),
 
-        _buildSectionHeader('FOAM ROLLING'),
+        _buildSectionHeader(context, 'FOAM ROLLING'),
         const SizedBox(height: AppSpacing.sm),
-        _buildBulletList([
+        _buildBulletList(context, [
           'Quads (2 mins / side)',
           'IT band (1 min / side)',
           'Glutes (1 min / side)',
@@ -41,16 +41,16 @@ class RestDayContent extends StatelessWidget {
         ]),
         const SizedBox(height: AppSpacing.xl),
 
-        _buildSectionHeader('ACTIVE RECOVERY'),
+        _buildSectionHeader(context, 'ACTIVE RECOVERY'),
         const SizedBox(height: AppSpacing.sm),
-        _buildBulletList([
+        _buildBulletList(context, [
           'Light walk (20-30 mins)',
           'Gentle cycling (15 mins)',
           'Yoga flow (15-20 mins)',
         ]),
         const SizedBox(height: AppSpacing.xl),
 
-        _buildSectionHeader('THIS WEEK'),
+        _buildSectionHeader(context, 'THIS WEEK'),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
@@ -80,14 +80,14 @@ class RestDayContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
       title,
-      style: AppTextStyles.labelUppercase(AppColors.textSecondary),
+      style: AppTextStyles.labelUppercase(context.appTextSecondary),
     );
   }
 
-  Widget _buildBulletList(List<String> items) {
+  Widget _buildBulletList(BuildContext context, List<String> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: items
@@ -108,7 +108,7 @@ class RestDayContent extends StatelessWidget {
                     Expanded(
                       child: Text(
                         item,
-                        style: AppTextStyles.body(AppColors.textSecondary),
+                        style: AppTextStyles.body(context.appTextSecondary),
                       ),
                     ),
                   ],

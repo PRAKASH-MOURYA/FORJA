@@ -32,12 +32,12 @@ class HistoryScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'History',
-                      style: AppTextStyles.displayLarge(AppColors.textPrimary),
+                      style: AppTextStyles.displayLarge(context.appTextPrimary),
                     ).animate().fadeIn(duration: 400.ms),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       _currentWeekLabel(),
-                      style: AppTextStyles.body(AppColors.textSecondary),
+                      style: AppTextStyles.body(context.appTextSecondary),
                     ).animate().fadeIn(delay: 80.ms, duration: 350.ms),
                     const SizedBox(height: AppSpacing.xxl),
                     _WeeklyCalendarCard(workouts: state.workouts)
@@ -54,7 +54,7 @@ class HistoryScreen extends ConsumerWidget {
                     Text(
                       'PAST WORKOUTS',
                       style: AppTextStyles.labelUppercase(
-                          AppColors.textSecondary),
+                          context.appTextSecondary),
                     ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
                     const SizedBox(height: AppSpacing.md),
                   ],
@@ -72,7 +72,7 @@ class HistoryScreen extends ConsumerWidget {
                           child: Text(
                             'No workouts logged yet — tap Today to start.',
                             style:
-                                AppTextStyles.body(AppColors.textSecondary),
+                                AppTextStyles.body(context.appTextSecondary),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -80,7 +80,7 @@ class HistoryScreen extends ConsumerWidget {
                     )
                   : SliverList(
                       delegate: SliverChildListDelegate(
-                        _buildWorkoutCards(state.workouts, state.recentPRs),
+                        _buildWorkoutCards(context, state.workouts, state.recentPRs),
                       ),
                     ),
             ),
@@ -143,7 +143,7 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   List<Widget> _buildWorkoutCards(
-      List<WorkoutLog> workouts, List<Map<String, dynamic>> prs) {
+      BuildContext context, List<WorkoutLog> workouts, List<Map<String, dynamic>> prs) {
     return workouts.asMap().entries.map((entry) {
       final index = entry.key;
       final log = entry.value;
@@ -161,7 +161,7 @@ class HistoryScreen extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       log.programDayName,
-                      style: AppTextStyles.subhead(AppColors.textPrimary),
+                      style: AppTextStyles.subhead(context.appTextPrimary),
                     ),
                   ),
                   if (prBadge != null)
@@ -175,7 +175,7 @@ class HistoryScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 _formatDate(log.startedAt),
-                style: AppTextStyles.caption(AppColors.textSecondary),
+                style: AppTextStyles.caption(context.appTextSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
               Row(
@@ -227,9 +227,9 @@ class _StatChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppColors.textTertiary, size: 14),
+        Icon(icon, color: context.appTextTertiary, size: 14),
         const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.caption(AppColors.textSecondary)),
+        Text(label, style: AppTextStyles.caption(context.appTextSecondary)),
       ],
     );
   }
@@ -270,7 +270,7 @@ class _WeeklyCalendarCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                   color: isToday
                       ? AppColors.accent
-                      : AppColors.textSecondary,
+                      : context.appTextSecondary,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -292,8 +292,8 @@ class _WeeklyCalendarCard extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: isToday
-                        ? AppColors.bg
-                        : AppColors.textPrimary,
+                        ? context.appBg
+                        : context.appTextPrimary,
                   ),
                 ),
               ),
@@ -305,7 +305,7 @@ class _WeeklyCalendarCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: hasWorkout
                       ? AppColors.accent
-                      : AppColors.textTertiary.withValues(alpha: 0.4),
+                      : context.appTextTertiary.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(AppRadius.circle),
                 ),
               ),

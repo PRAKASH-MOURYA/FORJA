@@ -4,6 +4,19 @@ import '../models/user_profile.dart';
 import '../repositories/profile_repository.dart';
 import '../services/auth_service.dart';
 
+bool _isSupabaseInitialized() {
+  try {
+    final _ = Supabase.instance.client;
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+final isSupabaseConfiguredProvider = StateProvider<bool>((ref) {
+  return _isSupabaseInitialized();
+});
+
 // Provides the AuthService instance
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();

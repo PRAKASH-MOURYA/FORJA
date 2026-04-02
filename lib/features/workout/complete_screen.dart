@@ -94,9 +94,10 @@ class _CompleteScreenState extends ConsumerState<CompleteScreen> {
       ref.invalidate(progressProvider);
       ref.invalidate(profileStatsProvider);
       ref.invalidate(readinessProvider);
-      ref.read(workoutProvider.notifier).reset();
-
       if (mounted) context.go('/today');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(workoutProvider.notifier).reset();
+      });
     } catch (_) {
       setState(() => _isSaving = false);
     }
@@ -106,8 +107,10 @@ class _CompleteScreenState extends ConsumerState<CompleteScreen> {
     ref.invalidate(historyProvider);
     ref.invalidate(progressProvider);
     ref.invalidate(profileStatsProvider);
-    ref.read(workoutProvider.notifier).reset();
     context.go('/today');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(workoutProvider.notifier).reset();
+    });
   }
 
   Future<void> _sharePr() async {

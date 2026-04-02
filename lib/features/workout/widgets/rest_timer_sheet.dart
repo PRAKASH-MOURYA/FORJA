@@ -52,8 +52,7 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress =
-        (_remaining / widget.totalSeconds).clamp(0.0, 1.0);
+    final progress = (_remaining / widget.totalSeconds).clamp(0.0, 1.0);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -124,8 +123,7 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
 }
 
 /// Shows the rest timer as a bottom sheet.
-void showRestTimerSheet(
-    BuildContext context, VoidCallback onComplete) {
+void showRestTimerSheet(BuildContext context, VoidCallback onComplete) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Colors.transparent,

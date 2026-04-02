@@ -58,7 +58,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: context.appBg,
       body: Stack(
         children: [
           // Radial ambient glow at top
@@ -99,12 +99,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         boxShadow: AppColors.accentShadow,
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         'F',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.bg,
+                          color: context.appBg,
                         ),
                       ),
                     ).animate().scale(
@@ -120,7 +120,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   ShaderMask(
                     shaderCallback: (bounds) =>
                         AppColors.heroGradient.createShader(bounds),
-                    child: const Text(
+                    child: Text(
                       'FORJA',
                       style: TextStyle(
                         fontSize: 40,
@@ -141,7 +141,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     _isSignUp
                         ? 'Create an account to save your progress'
                         : 'Welcome back, ready to train?',
-                    style: AppTextStyles.body(AppColors.textSecondary),
+                    style: AppTextStyles.body(context.appTextSecondary),
                     textAlign: TextAlign.center,
                   ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
 
@@ -161,9 +161,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline_rounded,
+                           Icon(Icons.error_outline_rounded,
                               color: AppColors.coral, size: 16),
-                          const SizedBox(width: AppSpacing.sm),
+                           SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               _errorMessage!,
@@ -182,7 +182,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       icon: Icons.person_outline_rounded,
                       delay: 300,
                     ),
-                    const SizedBox(height: AppSpacing.lg),
+                     SizedBox(height: AppSpacing.lg),
                   ],
 
                   _buildTextField(
@@ -192,7 +192,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     keyboardType: TextInputType.emailAddress,
                     delay: _isSignUp ? 360 : 300,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                   SizedBox(height: AppSpacing.lg),
 
                   _buildTextField(
                     controller: _passwordController,
@@ -202,7 +202,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     delay: _isSignUp ? 420 : 360,
                   ),
 
-                  const SizedBox(height: AppSpacing.xxxl),
+                   SizedBox(height: AppSpacing.xxxl),
 
                   ForjaButton(
                     label: _isSignUp ? 'Sign Up' : 'Sign In',
@@ -210,7 +210,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     isLoading: _isLoading,
                   ).animate().fadeIn(delay: 420.ms, duration: 400.ms),
 
-                  const SizedBox(height: AppSpacing.xxl),
+                   SizedBox(height: AppSpacing.xxl),
 
                   TextButton(
                     onPressed: () {
@@ -223,7 +223,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       _isSignUp
                           ? 'Already have an account? Sign In'
                           : 'Need an account? Sign Up',
-                      style: const TextStyle(
+                      style:  TextStyle(
                         color: AppColors.accent,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
@@ -231,7 +231,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.lg),
+                   SizedBox(height: AppSpacing.lg),
 
                   // Divider
                   Row(
@@ -239,9 +239,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       Expanded(
                         child: Container(
                           height: 0.5,
-                          decoration: const BoxDecoration(
+                          decoration:  BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.transparent, AppColors.border],
+                              colors: [Colors.transparent, context.appBorder],
                             ),
                           ),
                         ),
@@ -251,15 +251,15 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             horizontal: AppSpacing.lg),
                         child: Text(
                           'OR',
-                          style: AppTextStyles.micro(AppColors.textTertiary),
+                          style: AppTextStyles.micro(context.appTextTertiary),
                         ),
                       ),
                       Expanded(
                         child: Container(
                           height: 0.5,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [AppColors.border, Colors.transparent],
+                              colors: [context.appBorder, Colors.transparent],
                             ),
                           ),
                         ),
@@ -298,11 +298,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
-      style: AppTextStyles.body(AppColors.textPrimary),
+      style: AppTextStyles.body(context.appTextPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: AppTextStyles.body(AppColors.textSecondary),
-        prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+        labelStyle: AppTextStyles.body(context.appTextSecondary),
+        prefixIcon: Icon(icon, color: context.appTextSecondary, size: 20),
         filled: true,
         fillColor: AppColors.bgInput,
         border: OutlineInputBorder(
@@ -311,7 +311,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          borderSide: const BorderSide(color: AppColors.border, width: 0.5),
+          borderSide: BorderSide(color: context.appBorder, width: 0.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),

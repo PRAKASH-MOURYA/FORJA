@@ -19,8 +19,7 @@ class HeroWorkoutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final estMinutes = (exercises.length * 8 + 4).clamp(20, 90);
+        final estMinutes = (exercises.length * 8 + 4).clamp(20, 90);
     final estVolume = exercises.fold<double>(
       0,
       (sum, e) => sum + (e.sets * e.reps * e.defaultKg),
@@ -41,17 +40,17 @@ class HeroWorkoutCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: isDark ? AppColors.bgElevated : AppColors.bgElevatedLight,
+                  color: context.appBgElevated,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(
-                    color: isDark ? AppColors.border : AppColors.borderLight,
+                    color: context.appBorder,
                     width: 0.5,
                   ),
                 ),
                 child: Text(
                   '${exercises.length} EXERCISES',
                   style: AppTextStyles.micro(
-                    isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+                    context.appTextSecondary,
                   ),
                 ),
               ),
@@ -78,14 +77,14 @@ class HeroWorkoutCard extends StatelessWidget {
           Text(
             dayName,
             style: AppTextStyles.display(
-              isDark ? AppColors.textPrimary : AppColors.textPrimaryLight,
+              context.appTextPrimary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Est. $estMinutes min · ${(estVolume / 1000).toStringAsFixed(1)}T total',
             style: AppTextStyles.caption(
-              isDark ? AppColors.textSecondary : AppColors.textSecondaryLight,
+              context.appTextSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.xl),

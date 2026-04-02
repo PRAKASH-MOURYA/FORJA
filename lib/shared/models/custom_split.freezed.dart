@@ -30,7 +30,13 @@ mixin _$CustomSplit {
   @HiveField(3)
   List<SplitDay> get days => throw _privateConstructorUsedError;
   @HiveField(4)
-  DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime get createdAt =>
+      throw _privateConstructorUsedError; // weekday (1=Mon … 7=Sun) → index into days list.
+// Empty map = all days are rest days.
+// @Default ensures backwards-compat: existing Hive records without this field
+// deserialise to {} instead of null.
+  @HiveField(5, defaultValue: <int, int>{})
+  Map<int, int> get weekdayMap => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -49,7 +55,8 @@ abstract class $CustomSplitCopyWith<$Res> {
       @HiveField(1) String name,
       @HiveField(2) int daysCount,
       @HiveField(3) List<SplitDay> days,
-      @HiveField(4) DateTime createdAt});
+      @HiveField(4) DateTime createdAt,
+      @HiveField(5, defaultValue: <int, int>{}) Map<int, int> weekdayMap});
 }
 
 /// @nodoc
@@ -70,6 +77,7 @@ class _$CustomSplitCopyWithImpl<$Res, $Val extends CustomSplit>
     Object? daysCount = null,
     Object? days = null,
     Object? createdAt = null,
+    Object? weekdayMap = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -92,6 +100,10 @@ class _$CustomSplitCopyWithImpl<$Res, $Val extends CustomSplit>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      weekdayMap: null == weekdayMap
+          ? _value.weekdayMap
+          : weekdayMap // ignore: cast_nullable_to_non_nullable
+              as Map<int, int>,
     ) as $Val);
   }
 }
@@ -109,7 +121,8 @@ abstract class _$$CustomSplitImplCopyWith<$Res>
       @HiveField(1) String name,
       @HiveField(2) int daysCount,
       @HiveField(3) List<SplitDay> days,
-      @HiveField(4) DateTime createdAt});
+      @HiveField(4) DateTime createdAt,
+      @HiveField(5, defaultValue: <int, int>{}) Map<int, int> weekdayMap});
 }
 
 /// @nodoc
@@ -128,6 +141,7 @@ class __$$CustomSplitImplCopyWithImpl<$Res>
     Object? daysCount = null,
     Object? days = null,
     Object? createdAt = null,
+    Object? weekdayMap = null,
   }) {
     return _then(_$CustomSplitImpl(
       id: null == id
@@ -150,6 +164,10 @@ class __$$CustomSplitImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      weekdayMap: null == weekdayMap
+          ? _value._weekdayMap
+          : weekdayMap // ignore: cast_nullable_to_non_nullable
+              as Map<int, int>,
     ));
   }
 }
@@ -162,8 +180,11 @@ class _$CustomSplitImpl implements _CustomSplit {
       @HiveField(1) required this.name,
       @HiveField(2) required this.daysCount,
       @HiveField(3) required final List<SplitDay> days,
-      @HiveField(4) required this.createdAt})
-      : _days = days;
+      @HiveField(4) required this.createdAt,
+      @HiveField(5, defaultValue: <int, int>{})
+      final Map<int, int> weekdayMap = const <int, int>{}})
+      : _days = days,
+        _weekdayMap = weekdayMap;
 
   factory _$CustomSplitImpl.fromJson(Map<String, dynamic> json) =>
       _$$CustomSplitImplFromJson(json);
@@ -192,10 +213,27 @@ class _$CustomSplitImpl implements _CustomSplit {
   @override
   @HiveField(4)
   final DateTime createdAt;
+// weekday (1=Mon … 7=Sun) → index into days list.
+// Empty map = all days are rest days.
+// @Default ensures backwards-compat: existing Hive records without this field
+// deserialise to {} instead of null.
+  final Map<int, int> _weekdayMap;
+// weekday (1=Mon … 7=Sun) → index into days list.
+// Empty map = all days are rest days.
+// @Default ensures backwards-compat: existing Hive records without this field
+// deserialise to {} instead of null.
+  @override
+  @JsonKey()
+  @HiveField(5, defaultValue: <int, int>{})
+  Map<int, int> get weekdayMap {
+    if (_weekdayMap is EqualUnmodifiableMapView) return _weekdayMap;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_weekdayMap);
+  }
 
   @override
   String toString() {
-    return 'CustomSplit(id: $id, name: $name, daysCount: $daysCount, days: $days, createdAt: $createdAt)';
+    return 'CustomSplit(id: $id, name: $name, daysCount: $daysCount, days: $days, createdAt: $createdAt, weekdayMap: $weekdayMap)';
   }
 
   @override
@@ -209,13 +247,21 @@ class _$CustomSplitImpl implements _CustomSplit {
                 other.daysCount == daysCount) &&
             const DeepCollectionEquality().equals(other._days, _days) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            const DeepCollectionEquality()
+                .equals(other._weekdayMap, _weekdayMap));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, daysCount,
-      const DeepCollectionEquality().hash(_days), createdAt);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      daysCount,
+      const DeepCollectionEquality().hash(_days),
+      createdAt,
+      const DeepCollectionEquality().hash(_weekdayMap));
 
   @JsonKey(ignore: true)
   @override
@@ -237,7 +283,9 @@ abstract class _CustomSplit implements CustomSplit {
       @HiveField(1) required final String name,
       @HiveField(2) required final int daysCount,
       @HiveField(3) required final List<SplitDay> days,
-      @HiveField(4) required final DateTime createdAt}) = _$CustomSplitImpl;
+      @HiveField(4) required final DateTime createdAt,
+      @HiveField(5, defaultValue: <int, int>{})
+      final Map<int, int> weekdayMap}) = _$CustomSplitImpl;
 
   factory _CustomSplit.fromJson(Map<String, dynamic> json) =
       _$CustomSplitImpl.fromJson;
@@ -257,6 +305,12 @@ abstract class _CustomSplit implements CustomSplit {
   @override
   @HiveField(4)
   DateTime get createdAt;
+  @override // weekday (1=Mon … 7=Sun) → index into days list.
+// Empty map = all days are rest days.
+// @Default ensures backwards-compat: existing Hive records without this field
+// deserialise to {} instead of null.
+  @HiveField(5, defaultValue: <int, int>{})
+  Map<int, int> get weekdayMap;
   @override
   @JsonKey(ignore: true)
   _$$CustomSplitImplCopyWith<_$CustomSplitImpl> get copyWith =>

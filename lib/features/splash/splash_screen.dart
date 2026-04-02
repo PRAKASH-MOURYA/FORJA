@@ -151,7 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                         decoration: BoxDecoration(
                           gradient: AppColors.heroGradient,
                           borderRadius: BorderRadius.circular(AppRadius.xxl),
-                          boxShadow: AppColors.mintGlow,
+                          boxShadow: AppColors.indigoGlow,
                         ),
                         child: const Center(
                           child: Text(
